@@ -13,7 +13,7 @@ Downloading the data
 wget https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz 
 ```
 
-> Note: now the CSV data is stored in the `csv_backup` folder, not `trip+date` like previously
+> Note: now the CSV data is stored in the `csv_backup` folder, not `trip+data` like previously
 
 ### Running Postgres with Docker
 
@@ -165,7 +165,7 @@ docker run -it \
 Running locally
 
 ```bash
-URL="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+URL="https://s3.amazonaws.com/nyc-tlc/csv_backup/yellow_tripdata_2021-01.csv"
 
 python ingest_data.py \
   --user=root \
