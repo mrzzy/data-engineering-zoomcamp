@@ -31,6 +31,8 @@ def main(params):
     df.tpep_pickup_datetime = pd.to_datetime(df.tpep_pickup_datetime)
     df.tpep_dropoff_datetime = pd.to_datetime(df.tpep_dropoff_datetime)
 
+    # write the table schema, generated using pandas autodetection to postgresql
+    # .head(n=0) to ensure no actual rows are being written to the database
     df.head(n=0).to_sql(name=table_name, con=engine, if_exists='replace')
 
     df.to_sql(name=table_name, con=engine, if_exists='append')
