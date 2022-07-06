@@ -18,5 +18,9 @@ services:
     build: .
     volumes:
       - ./data:/data
+    command: 
+      - "/data/yellow_tripdata_2021-01.csv"
+      - "/data/taxi+_zone_lookup.csv"
+      - "db:5432"
 volumes:
   db-data: {}

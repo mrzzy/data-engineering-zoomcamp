@@ -20,4 +20,3 @@ COPY ingest.py /app
 
 WORKDIR /app
 ENTRYPOINT ["python", "ingest.py"]
-CMD ["/data/yellow_tripdata_2021-01.csv", "/data/taxi+_zone_lookup.csv", "postgres:5432"]
