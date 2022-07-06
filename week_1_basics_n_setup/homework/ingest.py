@@ -50,7 +50,7 @@ the POSTGRES_PASSWORD environment variable.
     # connect to the Postgres DB
     db_password = os.environ["POSTGRES_PASSWORD"]
     db = create_engine(
-        f"postgres+psycopg2://{args.db_user}:{db_password}@{args.db_host}{args.db_schema}"
+        f"postgres+psycopg2://{args.db_user}:{db_password}@{args.db_host}/{args.db_schema}"
     )
 
     # import taxi zone lookup data into Postgres
