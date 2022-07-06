@@ -14,4 +14,5 @@ RUN pip install wheel -r /tmp/requirements.txt
 COPY ingest.py /app
 
 WORKDIR /app
-CMD ["python", "ingest.py", "-h"]
+ENTRYPOINT ["python", "ingest.py"]
+CMD ["/data/yellow_tripdata_2021-01.csv", "/data/taxi+_zone_lookup.csv", "postgres:5432"]
