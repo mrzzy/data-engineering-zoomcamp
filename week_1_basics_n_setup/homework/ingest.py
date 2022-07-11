@@ -4,9 +4,11 @@
 # Ingest Pipeline
 #
 
+import numpy as np
 import os
 import logging as log
 from time import sleep
+from typing import cast
 import pandas as pd
 from pathlib import Path
 from argparse import ArgumentParser
@@ -24,7 +26,9 @@ the POSTGRES_PASSWORD environment variable.
     )
     parser.add_argument_group("Input Files")
     parser.add_argument(
-        "cab_csv", type=Path, help="Path to the Yellow Cab Taxi CSV file to import."
+        "cab_csv",
+        type=Path,
+        help="Path to the Yellow Cab Taxi Trips CSV file to import.",
     )
     parser.add_argument(
         "zone_csv", type=Path, help="Path to the Taxi Zone CSV file to import."
@@ -45,8 +49,10 @@ the POSTGRES_PASSWORD environment variable.
         help="Name of the Postgres DB database to write tables to.",
     )
     parser.add_argument(
-        "--db-user", type=str, default="postgres",
-        help="Username of the Postgres DB user used to log into the DB."
+        "--db-user",
+        type=str,
+        default="postgres",
+        help="Username of the Postgres DB user used to log into the DB.",
     )
     parser.parse_args()
     args = parser.parse_args()
@@ -67,8 +73,36 @@ the POSTGRES_PASSWORD environment variable.
     else:
         raise RuntimeError("Failed to connect to database despite retries")
 
-    # import taxi zone lookup data into Postgres
+    # read data from csv & set data types
+    zone_table, zone_df = "PickupZones", cast(pd.DataFrame, pd.read_csv(args.zone_csv))
+    trip_table, trip_df = "TaxiTrips", pd.read_csv(
+        args.cab_csv,
+        converters={
+            "tpep_pickup_datetime": pd.to_datetime,
+            "tpep_dropoff_datetime": pd.to_datetime,
+        },
+        dtype={
+            "VendorID": "int",
+            "passenger_count": "int",
+            "trip_distance": "float",
+            "RatecodeID": "int",
+            "PULocationID": "int",
+            "DOLocationID": "int",
+            "payment_type": "int",
+            "fare_amount": "float",
+            "extra": "float",
+            "mta_tax": "float",
+            "tip_amount": "float",
+            "tolls_amount": "float",
+            "improvement_surcharge": "float",
+            "total_amount": "float",
+            "congestion_surcharge": "float",
+        },
+        iterator=True,
+        chunksize=args.batch_size,
+    )
+
+    # apply table schema only to into postgres don't write any rows
     with db.begin():
-        zone_df = pd.read_csv(args.zone_csv)
-        zone_df.to_sql("PickupZone", db,
-                       if_exists="replace")
+        zone_df.head(0).to_sql(zone_table, db, if_exists="replace")
+        trip_df.get_chunk(0).head(0).to_sql(trip_table, db, if_exists="replace")
