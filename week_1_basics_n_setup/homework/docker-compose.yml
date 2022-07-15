@@ -13,14 +13,21 @@ services:
       - 5432:5432
     volumes:
       - db-data:/var/lib/postgresql/data
+
   ingest:
-    env_file: .env
     build: .
+    env_file: .env
     volumes:
       - ./data:/data
     command: 
       - "/data/yellow_tripdata_2021-01.csv"
       - "/data/taxi+_zone_lookup.csv"
       - "db:5432"
+
+  db-ui:
+    image: dpage/pgadmin4:6.11
+    env_file: .env
+    ports:
+      - 8080:80
 volumes:
   db-data: {}
