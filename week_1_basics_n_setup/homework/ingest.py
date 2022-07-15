@@ -4,14 +4,15 @@
 # Ingest Pipeline
 #
 
-import numpy as np
-import os
 import logging as log
-from time import sleep
-from typing import cast
-import pandas as pd
-from pathlib import Path
+import os
 from argparse import ArgumentParser
+from datetime import timedelta
+from pathlib import Path
+from time import sleep, time
+from typing import cast
+
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
@@ -106,3 +107,17 @@ the POSTGRES_PASSWORD environment variable.
     with db.begin():
         zone_df.head(0).to_sql(zone_table, db, if_exists="replace")
         trip_df.get_chunk(0).head(0).to_sql(trip_table, db, if_exists="replace")
+    log.info("Applied table schema to DB.")
+
+    # Ingest Data
+    # ingest taxi zone lookup table oneshot
+    zone_df.to_sql(zone_table, db, if_exists="append")
+    log.info("Ingested Taxi Zone Lookup table to DB.")
+
+    # ingest taxi trip data in chunks
+    for i, chunk_df in enumerate(trip_df):
+        begin = time()
+        chunk_df.to_sql(trip_table, db, if_exists="append")
+        elapsed = timedelta(seconds=time() - begin)
+        log.info(f"Ingested Taxi Trips Chunk {i}: took {elapsed} ...")
+    log.info("Ingested Taxi Trips Data table to DB.")
