@@ -4,31 +4,54 @@
 # Ingest Pipeline
 #
 
+from io import StringIO
 import logging as log
-import os
+import os, csv
 from argparse import ArgumentParser
 from datetime import timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import cast
+from typing import List, cast, Iterable
 
 import pandas as pd
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import OperationalError
 
 
 def count_lines(path: str) -> int:
-    """
-    Count the number of the lines in the text file of the given path.
-    """
-    buf_size = 1024 * 1024 # 1MB
-    n_lines = 0 
+    """Count the number of the lines in the text file of the given path."""
+    buf_size = 1024 * 1024  # 1MB
+    n_lines = 0
     with open(path, "rb", buffering=0) as f:
         buf = b"non empty"
         while len(buf) > 0:
             buf = f.read(buf_size)
             n_lines += buf.count(b"\n")
     return n_lines
+
+
+def _copy_postgres(table, conn: Connection, keys: List[str], chunk_iter: Iterable):
+    """Defines a pandas.DataFrame.to_sql method for data insertion via the COPY statement.
+
+    See https://pandas.pydata.org/pandas-docs/version/1.4.0/user_guide/io.html#io-sql-method
+    for documentation on arguments.
+    """
+    # write dataframe chunk as CSV into a buffer
+    buffer = StringIO()
+    csv_writer = csv.writer(buffer, delimiter="\t")
+    csv_writer.writerows(chunk_iter)
+
+    # seek buffer cursor to start so that the COPY statement will read from the start
+    buffer.seek(0)
+
+    # build table name in format [SCHEMA.]<TABLE>
+    table_fullname = f"{table.schema}.{table.name}" if table.schema else table.name
+
+    # write csv into the postgres DB using the COPY statement
+    cursor = conn.connection.cursor()
+    cursor.copy_from(buffer, table_fullname, columns=keys, null="")  # type: ignore
+    cursor.close()
 
 
 if __name__ == "__main__":
@@ -136,7 +159,7 @@ the POSTGRES_PASSWORD environment variable.
     # ingest taxi trip data in chunks
     for i, chunk_df in enumerate(trip_df):
         begin = time()
-        chunk_df.to_sql(trip_table, db, if_exists="append")
+        chunk_df.to_sql(trip_table, db, if_exists="append", method=_copy_postgres)
         elapsed = timedelta(seconds=time() - begin)
         log.info(f"Ingested Taxi Trips Chunk {i}/{n_batches}: took {elapsed} ...")
     log.info("Ingested Taxi Trips Data table to DB.")
