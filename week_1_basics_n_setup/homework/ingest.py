@@ -4,18 +4,16 @@
 # Ingest Pipeline
 #
 
-from io import StringIO
 import logging as log
-import os, csv
+import os
 from argparse import ArgumentParser
 from datetime import timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import List, cast, Iterable
+from typing import cast
 
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Connection
 from sqlalchemy.exc import OperationalError
 
 
@@ -29,29 +27,6 @@ def count_lines(path: str) -> int:
             buf = f.read(buf_size)
             n_lines += buf.count(b"\n")
     return n_lines
-
-
-def _copy_postgres(table, conn: Connection, keys: List[str], chunk_iter: Iterable):
-    """Defines a pandas.DataFrame.to_sql method for data insertion via the COPY statement.
-
-    See https://pandas.pydata.org/pandas-docs/version/1.4.0/user_guide/io.html#io-sql-method
-    for documentation on arguments.
-    """
-    # write dataframe chunk as CSV into a buffer
-    buffer = StringIO()
-    csv_writer = csv.writer(buffer, delimiter="\t")
-    csv_writer.writerows(chunk_iter)
-
-    # seek buffer cursor to start so that the COPY statement will read from the start
-    buffer.seek(0)
-
-    # build table name in format [SCHEMA.]<TABLE>
-    table_fullname = f"{table.schema}.{table.name}" if table.schema else table.name
-
-    # write csv into the postgres DB using the COPY statement
-    cursor = conn.connection.cursor()
-    cursor.copy_from(buffer, table_fullname, columns=keys, null="")  # type: ignore
-    cursor.close()
 
 
 if __name__ == "__main__":
@@ -74,12 +49,6 @@ the POSTGRES_PASSWORD environment variable.
     )
     parser.add_argument(
         "db_host", type=str, help="Hostname, port of Postgres DB to connect to"
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=100000,
-        help="Size of each batch of Yellow Cab Taxi data imported into the Postgres DB",
     )
     parser.add_argument(
         "--db-database",
@@ -112,39 +81,43 @@ the POSTGRES_PASSWORD environment variable.
     else:
         raise RuntimeError("Failed to connect to database despite retries")
 
-    # read data from csv & set data types
+    # read dataframes from csv & set data types
     zone_table, zone_df = "PickupZones", cast(pd.DataFrame, pd.read_csv(args.zone_csv))
-    trip_table, trip_df = "TaxiTrips", pd.read_csv(
-        args.cab_csv,
-        converters={
-            "tpep_pickup_datetime": pd.to_datetime,
-            "tpep_dropoff_datetime": pd.to_datetime,
-        },
-        dtype={
-            "VendorID": "Int64",
-            "passenger_count": "Int64",
-            "trip_distance": "float",
-            "RatecodeID": "Int64",
-            "PULocationID": "Int64",
-            "DOLocationID": "Int64",
-            "payment_type": "Int64",
-            "fare_amount": "float",
-            "extra": "float",
-            "mta_tax": "float",
-            "tip_amount": "float",
-            "tolls_amount": "float",
-            "improvement_surcharge": "float",
-            "total_amount": "float",
-            "congestion_surcharge": "float",
-        },
-        iterator=True,
-        chunksize=args.batch_size,
+    # as TaxiTrips is a large dataset, we will only use pandas to create a table
+    # to store the data into the database. Hence no rows are actually read.
+    trip_table, trip_df = "TaxiTrips", cast(
+        pd.DataFrame,
+        pd.read_csv(
+            args.cab_csv,
+            converters={
+                "tpep_pickup_datetime": pd.to_datetime,
+                "tpep_dropoff_datetime": pd.to_datetime,
+            },
+            dtype={
+                "VendorID": "Int64",
+                "passenger_count": "Int64",
+                "trip_distance": "float",
+                "RatecodeID": "Int64",
+                "PULocationID": "Int64",
+                "DOLocationID": "Int64",
+                "payment_type": "Int64",
+                "fare_amount": "float",
+                "extra": "float",
+                "mta_tax": "float",
+                "tip_amount": "float",
+                "tolls_amount": "float",
+                "improvement_surcharge": "float",
+                "total_amount": "float",
+                "congestion_surcharge": "float",
+            },
+            nrows=0,
+        ),
     )
 
     # apply table schema only to into postgres don't write any rows
     with db.begin():
         zone_df.head(0).to_sql(zone_table, db, if_exists="replace")
-        trip_df.get_chunk(0).head(0).to_sql(trip_table, db, if_exists="replace")
+        trip_df.head(0).to_sql(trip_table, db, if_exists="replace")
     log.info("Applied table schema to DB.")
 
     # Ingest Data
@@ -152,14 +125,22 @@ the POSTGRES_PASSWORD environment variable.
     zone_df.to_sql(zone_table, db, if_exists="append")
     log.info("Ingested Taxi Zone Lookup table to DB.")
 
-    # count taxi trip records needed to be ingested
-    n_trips = count_lines(args.cab_csv)
-    n_batches = n_trips // args.batch_size + 1
+    # ingest taxi trip data using Postgres's COPY FROM statement
+    log.debug("Ingesting Taxi Trips Data table to DB...")
+    begin = time()
+    with open(args.cab_csv, "r") as cab_csv:
+        # skip first header line from ingestion
+        next(cab_csv)
 
-    # ingest taxi trip data in chunks
-    for i, chunk_df in enumerate(trip_df):
-        begin = time()
-        chunk_df.to_sql(trip_table, db, if_exists="append", method=_copy_postgres)
-        elapsed = timedelta(seconds=time() - begin)
-        log.info(f"Ingested Taxi Trips Chunk {i}/{n_batches}: took {elapsed} ...")
-    log.info("Ingested Taxi Trips Data table to DB.")
+        conn = db.raw_connection()
+        cursor = conn.cursor()
+        cursor.copy_from(  # type: ignore
+            cab_csv, trip_table, sep=",", columns=trip_df.columns, null=""
+        )
+        conn.commit()
+
+        # clean up reosurces
+        cursor.close()
+        conn.close()
+    elapsed = timedelta(seconds=time() - begin)
+    log.info(f"Ingested Taxi Trips Data table to DB: took {elapsed}")
