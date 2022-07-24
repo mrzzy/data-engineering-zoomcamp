@@ -13,7 +13,7 @@ from time import sleep, time
 from typing import cast
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import DateTime, create_engine
 from sqlalchemy.exc import OperationalError
 
 
@@ -114,15 +114,21 @@ the POSTGRES_PASSWORD environment variable.
         ),
     )
 
+    # sql data type overrides for Taxi Trips table
+    trip_dtypes = {
+        "tpep_dropoff_datetime": DateTime,
+        "tpep_pickup_datetime": DateTime,
+    }
+
     # apply table schema only to into postgres don't write any rows
     with db.begin():
         zone_df.head(0).to_sql(zone_table, db, if_exists="replace")
-        trip_df.head(0).to_sql(trip_table, db, if_exists="replace")
+        trip_df.head(0).to_sql(trip_table, db, if_exists="replace", dtype=trip_dtypes)
     log.info("Applied table schema to DB.")
 
     # Ingest Data
     # ingest taxi zone lookup table oneshot
-    zone_df.to_sql(zone_table, db, if_exists="append")
+    zone_df.to_sql(zone_table, db, if_exists="append", dtype=trip_dtypes)
     log.info("Ingested Taxi Zone Lookup table to DB.")
 
     # ingest taxi trip data using Postgres's COPY FROM statement
