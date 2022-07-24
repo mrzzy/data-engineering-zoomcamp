@@ -70,7 +70,7 @@ the POSTGRES_PASSWORD environment variable.
     db = create_engine(
         f"postgresql+psycopg2://{args.db_user}:{db_password}@{args.db_host}/{args.db_database}"
     )
-    for i in range(5):
+    for i in range(10):
         try:
             log.info(f"Connecting to DB: Retry {i+1}")
             db.connect()
