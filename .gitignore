@@ -17,5 +17,5 @@ serving_dir
 !week_6_stream_processing/avro_example/data/rides.csv
 /.vim/
 /tags
-/venv/
+venv/
 /week_1_basics_n_setup/homework/venv/
