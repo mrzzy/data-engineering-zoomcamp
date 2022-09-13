@@ -11,8 +11,7 @@ You can find all the URLs on [the dataset page](https://www1.nyc.gov/site/tlc/ab
 
 In this homework, we will:
 
-* Modify the DAG we created during the lessons for transferring the yellow taxi data
-* Create a new dag for transferring the FHV data
+* Modify the DAG we created during the lessons for transferring the yellow taxi data Create a new dag for transferring the FHV data
 * Create another dag for the Zones data
 
 
@@ -32,7 +31,7 @@ we created in the videos.
 
 What should be the start date for this dag?
 
-* 2019-01-01
+* **2019-01-01**
 * 2020-01-01
 * 2021-01-01
 * days_ago(1)
@@ -43,7 +42,7 @@ What should be the start date for this dag?
 How often do we need to run this DAG?
 
 * Daily
-* Monthly
+* **Monthly**
 * Yearly
 * Once
 
