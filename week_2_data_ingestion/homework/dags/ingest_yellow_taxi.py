@@ -11,6 +11,8 @@ from typing import Optional
 
 from airflow.decorators import dag, task
 from pendulum import datetime
+from pendulum.datetime import DateTime
+from pyarrow import csv, parquet
 
 NEW_YORK_TIMEZONE = "US/Eastern"
 
@@ -27,7 +29,7 @@ def build_dag():
     @task(
         pool="github_api"
     )
-    def download(data_interval_start: Optional[datetime.DateTime] = None) -> str:
+    def download(data_interval_start: Optional[DateTime] = None) -> str:
         """
         Download & Uncompress Yellow Cab Data CSV.
         Returns the path to the downloaded CSV File.
@@ -42,4 +44,21 @@ def build_dag():
             f.write(csv)
 
         return csv_path
-    download()
+
+    @task
+    def convert_parquet(csv_path: str) -> str:
+        """
+        Converts the CSV file at the given file to Parquet.
+        Returns the path to the converted Parquet File.
+        """
+        # rewrite csv as parquet file
+        table = csv.read_csv(csv_path)
+        pq_path = csv_path.replace("csv", "pq")
+        parquet.write_table(
+            table,
+            where=pq_path,
+            compresssion="snappy",
+        )
+        return pq_path
+
+    convert_parquet(download())
