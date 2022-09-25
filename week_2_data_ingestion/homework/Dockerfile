@@ -3,6 +3,7 @@ FROM apache/airflow:2.3.4
 ENV AIRFLOW_HOME=/opt/airflow
 
 # install airflow with gcloud provider
+ENV AIRFLOW_GPL_UNIDECODE=1
 RUN pip install --no-cache-dir \
     --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.3.4/constraints-3.7.txt \
     "apache-airflow[google]" \
