@@ -9,15 +9,20 @@ import requests
 
 from typing import Optional
 
-from airflow.decorators import dag, task
+from airflow.decorators import dag, task, task_group
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pyarrow import csv, parquet
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryCreateEmptyDatasetOperator,
+    BigQueryCreateExternalTableOperator,
+    BigQueryDeleteTableOperator,
+)
 
 NEW_YORK_TIMEZONE = "US/Eastern"
 BUCKET = "dtc_data_lake_mrzzy-data-eng-zoomcamp"
-DATASET_PREFIX = "nyc_tlc"
+DATASET = "nyc_tlc"
 
 
 @dag(
@@ -67,12 +72,10 @@ def build_dag():
         return pq_path
 
     @task
-    def upload_gcs(
-        src_path: str, bucket: str = BUCKET, prefix: str = DATASET_PREFIX
-    ) -> str:
+    def upload_gcs(src_path: str, bucket: str = BUCKET, prefix: str = DATASET) -> str:
         """
         Upload the file at the given path to the GCS with the given destination prefix.
-        Returns location the file was uploaded to in GCS as a 'gs://' URL.
+        Returns path the file was uploaded to within the bucket.
         """
         gcs, dest_path = GCSHook(), f"{prefix}/{src_path}"
         gcs.upload(
@@ -80,9 +83,43 @@ def build_dag():
             object_name=dest_path,
             filename=src_path,
         )
-        return f"gs://{bucket}/{dest_path}"
+        return dest_path
+
+    @task_group
+    def ingest_bq_parquet(
+        gs_path: str,
+        bucket: str = BUCKET,
+        dataset: str = DATASET,
+        data_interval_start: Optional[DateTime] = None,
+    ):
+        """
+        Ingest the given Parquet file on the GCS Bucket into BigQuery as a table.
+
+        """
+        # fully replace existing table with new table if it already exists
+        partition = data_interval_start.strftime("%Y_%m")  # type: ignore
+        table_id = f"{dataset}.yellow_{partition}"
+
+        remove_existing = BigQueryDeleteTableOperator(
+            deletion_dataset_table=table_id,
+            ignore_if_missing=True,
+        )
+
+        ingest_parquet = BigQueryCreateExternalTableOperator(
+            bucket=bucket,
+            source_objects=[gs_path],
+            destination_project_dataset_table=table_id,
+            source_format="PARQUET",
+        )
+
+        create_dataset >> remove_existing >> ingest_parquet  # type: ignore
 
     # define dag
     csv_path = download()
     pq_path = convert_parquet(csv_path)
     gs_path = upload_gcs(pq_path)
+    create_dataset = BigQueryCreateEmptyDatasetOperator(
+        dataset_id=DATASET, exists_ok=True
+    )
+    ingest_bq_parquet(gs_path)
+    create_dataset >> ingest_bq_parquet  # type: ignore
