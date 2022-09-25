@@ -30,6 +30,10 @@ DATASET = "nyc_tlc"
     start_date=datetime(2019, 1, 1, tz=NEW_YORK_TIMEZONE),
     end_date=datetime(2021, 7, 1, tz=NEW_YORK_TIMEZONE),
     schedule_interval="0 3 2 * *",  # 3am on the 2nd of every month
+    catchup=False,
+    params={
+        "dataset": DATASET,
+    }
 )
 def build_dag():
     """
@@ -89,13 +93,12 @@ def build_dag():
     def ingest_bq_parquet(
         gs_path: str,
         bucket: str = BUCKET,
-        dataset: str = DATASET,
     ):
         """
         Ingest the given Parquet file on the GCS Bucket into BigQuery as a table.
         """
         # fully replace existing table with new table if it already exists
-        table_id = "{}.yellow_{{ data_interval_start.strftime('%Y_%m')}}".format(dataset)
+        table_id = "{{ params.dataset }}.yellow_{{ data_interval_start.strftime('%Y_%m') }}"
 
         remove_existing = BigQueryDeleteTableOperator(
             task_id="remove_existing_table",
