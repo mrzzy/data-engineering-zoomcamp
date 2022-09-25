@@ -38,7 +38,7 @@ def build_dag():
     `google_cloud_default` with GCS & BigQuery IAM permissions
     """
 
-    @task(pool="github_api")
+    @task
     def download(data_interval_start: Optional[DateTime] = None) -> str:
         """
         Download & Uncompress Yellow Cab Data CSV.
