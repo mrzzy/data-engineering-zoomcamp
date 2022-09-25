@@ -101,11 +101,13 @@ def build_dag():
         table_id = f"{dataset}.yellow_{partition}"
 
         remove_existing = BigQueryDeleteTableOperator(
+            task_id="remove_existing_table",
             deletion_dataset_table=table_id,
             ignore_if_missing=True,
         )
 
         ingest_parquet = BigQueryCreateExternalTableOperator(
+            task_id="ingest_parquet_bq_table",
             bucket=bucket,
             source_objects=[gs_path],
             destination_project_dataset_table=table_id,
@@ -119,7 +121,9 @@ def build_dag():
     pq_path = convert_parquet(csv_path)
     gs_path = upload_gcs(pq_path)
     create_dataset = BigQueryCreateEmptyDatasetOperator(
-        dataset_id=DATASET, exists_ok=True
+        task_id="create_bq_dataset", dataset_id=DATASET, exists_ok=True
     )
     ingest_bq_parquet(gs_path)
     create_dataset >> ingest_bq_parquet  # type: ignore
+
+build_dag()
