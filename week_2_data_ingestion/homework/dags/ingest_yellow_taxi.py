@@ -90,15 +90,13 @@ def build_dag():
         gs_path: str,
         bucket: str = BUCKET,
         dataset: str = DATASET,
-        data_interval_start: Optional[DateTime] = None,
     ):
         """
         Ingest the given Parquet file on the GCS Bucket into BigQuery as a table.
 
         """
         # fully replace existing table with new table if it already exists
-        partition = data_interval_start.strftime("%Y_%m")  # type: ignore
-        table_id = f"{dataset}.yellow_{partition}"
+        table_id = f"{dataset}.yellow_{{ data_interval_start.strftime('%Y_%m')}}"
 
         remove_existing = BigQueryDeleteTableOperator(
             task_id="remove_existing_table",
@@ -114,16 +112,17 @@ def build_dag():
             source_format="PARQUET",
         )
 
-        create_dataset >> remove_existing >> ingest_parquet  # type: ignore
+        remove_existing >> ingest_parquet  # type: ignore
 
     # define dag
     csv_path = download()
     pq_path = convert_parquet(csv_path)
     gs_path = upload_gcs(pq_path)
+
+    ingest_bq = ingest_bq_parquet(gs_path)
     create_dataset = BigQueryCreateEmptyDatasetOperator(
         task_id="create_bq_dataset", dataset_id=DATASET, exists_ok=True
     )
-    ingest_bq_parquet(gs_path)
-    create_dataset >> ingest_bq_parquet  # type: ignore
+    create_dataset >> ingest_bq  # type: ignore
 
 build_dag()
