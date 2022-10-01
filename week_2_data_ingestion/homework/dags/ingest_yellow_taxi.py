@@ -28,12 +28,12 @@ DATASET = "nyc_tlc"
 @dag(
     dag_id="ingest-yellow-taxi",
     start_date=datetime(2019, 1, 1, tz=UTC),
-    end_date=datetime(2021, 7, 1, tz=UTC),
+    end_date=datetime(2021, 7, 30, tz=UTC),
     schedule_interval="0 3 2 * *",  # 3am on the 2nd of every month
     catchup=False,
     params={
         "dataset": DATASET,
-    }
+    },
 )
 def build_dag():
     """
@@ -43,15 +43,14 @@ def build_dag():
     """
 
     @task
-    def download(data_interval_start: Optional[DateTime] = None) -> str:
+    def download(data_interval_end: Optional[DateTime] = None) -> str:
         """
         Download & Uncompress Yellow Cab Data CSV.
         Returns the path to the downloaded CSV File.
         """
         # download gzipped data into buffer
-        partition = data_interval_start.strftime("%Y-%m")  # type: ignore
+        partition = data_interval_end.strftime("%Y-%m")  # type: ignore
         csv_path = f"yellow_tripdata_{partition}.csv"
-        print(f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_{partition}.csv.gz")
         with requests.get(
             f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_{partition}.csv.gz"
         ) as r, open(csv_path, "wb") as f:
@@ -72,7 +71,7 @@ def build_dag():
         parquet.write_table(
             table,
             where=pq_path,
-            compresssion="snappy",
+            compression="snappy",
         )
         return pq_path
 
@@ -99,7 +98,9 @@ def build_dag():
         Ingest the given Parquet file on the GCS Bucket into BigQuery as a table.
         """
         # fully replace existing table with new table if it already exists
-        table_id = "{{ params.dataset }}.yellow_{{ data_interval_start.strftime('%Y_%m') }}"
+        table_id = (
+            "{{ params.dataset }}.yellow_{{ data_interval_start.strftime('%Y_%m') }}"
+        )
 
         remove_existing = BigQueryDeleteTableOperator(
             task_id="remove_existing_table",
@@ -127,5 +128,6 @@ def build_dag():
         task_id="create_bq_dataset", dataset_id=DATASET, exists_ok=True
     )
     create_dataset >> ingest_bq  # type: ignore
+
 
 dag = build_dag()
