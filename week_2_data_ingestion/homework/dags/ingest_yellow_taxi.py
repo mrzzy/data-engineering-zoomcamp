@@ -5,6 +5,7 @@
 #
 
 import gzip
+from pendulum.tz.timezone import UTC
 import requests
 
 from typing import Optional
@@ -20,15 +21,14 @@ from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryDeleteTableOperator,
 )
 
-NEW_YORK_TIMEZONE = "US/Eastern"
 BUCKET = "dtc_data_lake_mrzzy-data-eng-zoomcamp"
 DATASET = "nyc_tlc"
 
 
 @dag(
     dag_id="ingest-yellow-taxi",
-    start_date=datetime(2019, 1, 1, tz=NEW_YORK_TIMEZONE),
-    end_date=datetime(2021, 7, 1, tz=NEW_YORK_TIMEZONE),
+    start_date=datetime(2019, 1, 1, tz=UTC),
+    end_date=datetime(2021, 7, 1, tz=UTC),
     schedule_interval="0 3 2 * *",  # 3am on the 2nd of every month
     catchup=False,
     params={
@@ -51,6 +51,7 @@ def build_dag():
         # download gzipped data into buffer
         partition = data_interval_start.strftime("%Y-%m")  # type: ignore
         csv_path = f"yellow_tripdata_{partition}.csv"
+        print(f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_{partition}.csv.gz")
         with requests.get(
             f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_{partition}.csv.gz"
         ) as r, open(csv_path, "wb") as f:
