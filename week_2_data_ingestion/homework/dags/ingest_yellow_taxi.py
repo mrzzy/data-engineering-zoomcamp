@@ -90,12 +90,12 @@ def build_dag():
         return dest_path
 
     @task_group
-    def ingest_bq_parquet(
+    def register_bq_table(
         gs_path: str,
         bucket: str = BUCKET,
     ):
         """
-        Ingest the given Parquet file on the GCS Bucket into BigQuery as a table.
+        Register the given Parquet file on the GCS Bucket into BigQuery as a external table.
         """
         # fully replace existing table with new table if it already exists
         table_id = (
@@ -123,11 +123,11 @@ def build_dag():
     pq_path = convert_parquet(csv_path)
     gs_path = upload_gcs(pq_path)
 
-    ingest_bq = ingest_bq_parquet(gs_path)
+    register_bq = register_bq_table(gs_path)
     create_dataset = BigQueryCreateEmptyDatasetOperator(
         task_id="create_bq_dataset", dataset_id=DATASET, exists_ok=True
     )
-    create_dataset >> ingest_bq  # type: ignore
+    create_dataset >> register_bq # type: ignore
 
 
 dag = build_dag()
