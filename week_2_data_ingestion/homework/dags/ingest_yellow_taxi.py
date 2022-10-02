@@ -4,7 +4,7 @@
 # Ingest Yellow Taxi Data to GCP
 #
 
-import gzip
+import gzip, os
 from pendulum.tz.timezone import UTC
 import requests
 
@@ -68,6 +68,7 @@ def build_dag():
         """
         # rewrite csv as parquet file
         table = csv.read_csv(csv_path)
+        os.remove(csv_path)
         pq_path = csv_path.replace("csv", "pq")
         parquet.write_table(
             table,
@@ -87,8 +88,8 @@ def build_dag():
             bucket_name=bucket,
             object_name=dest_path,
             filename=src_path,
-            chunk_size=8 * 1024 * 1024, # 8MB
         )
+        os.remove(src_path)
         return f"gs://{bucket}/{dest_path}"
 
     @task_group
