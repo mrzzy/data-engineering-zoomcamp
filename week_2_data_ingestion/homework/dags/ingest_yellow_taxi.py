@@ -44,13 +44,13 @@ def build_dag():
     """
 
     @task
-    def download(data_interval_end: Optional[DateTime] = None) -> str:
+    def download(data_interval_start: Optional[DateTime] = None) -> str:
         """
         Download & Uncompress Yellow Cab Data CSV.
         Returns the path to the downloaded CSV File.
         """
         # download gzipped data into buffer
-        partition = data_interval_end.strftime("%Y-%m")  # type: ignore
+        partition = data_interval_start.strftime("%Y-%m")  # type: ignore
         csv_path = f"yellow_tripdata_{partition}.csv"
         with requests.get(
             f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_{partition}.csv.gz"
