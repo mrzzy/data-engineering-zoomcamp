@@ -5,6 +5,7 @@
 #
 
 import gzip
+from airflow.models import Connection
 from pendulum.tz.timezone import UTC
 import requests
 
@@ -23,7 +24,7 @@ from airflow.providers.google.cloud.operators.bigquery import (
 
 BUCKET = "dtc_data_lake_mrzzy-data-eng-zoomcamp"
 DATASET = "nyc_tlc"
-
+GCP_PROJECT = "mrzzy-data-eng-zoomcamp"
 
 @dag(
     dag_id="ingest-yellow-taxi",
@@ -32,6 +33,7 @@ DATASET = "nyc_tlc"
     schedule_interval="0 3 2 * *",  # 3am on the 2nd of every month
     catchup=False,
     params={
+        "project_id": GCP_PROJECT,
         "dataset": DATASET,
     },
 )
@@ -79,49 +81,53 @@ def build_dag():
     def upload_gcs(src_path: str, bucket: str = BUCKET, prefix: str = DATASET) -> str:
         """
         Upload the file at the given path to the GCS with the given destination prefix.
-        Returns path the file was uploaded to within the bucket.
+        Returns fully qualified GCS path to the file
         """
         gcs, dest_path = GCSHook(), f"{prefix}/{src_path}"
         gcs.upload(
             bucket_name=bucket,
             object_name=dest_path,
             filename=src_path,
+            chunk_size=8 * 1024 * 1024, # 8MB
         )
-        return dest_path
+        return f"gs://{bucket}/{dest_path}"
 
     @task_group
     def register_bq_table(
         gs_path: str,
-        bucket: str = BUCKET,
     ):
         """
         Register the given Parquet file on the GCS Bucket into BigQuery as a external table.
         """
         # fully replace existing table with new table if it already exists
-        table_id = (
-            "{{ params.dataset }}.yellow_{{ data_interval_start.strftime('%Y_%m') }}"
-        )
+        table_name = "yellow_{{ data_interval_start.strftime('%Y_%m') }}"
 
         remove_existing = BigQueryDeleteTableOperator(
             task_id="remove_existing_table",
-            deletion_dataset_table=table_id,
+            deletion_dataset_table="{{ params.dataset }}.%s" % table_name,
             ignore_if_missing=True,
         )
 
-        ingest_parquet = BigQueryCreateExternalTableOperator(
+        register_bq = BigQueryCreateExternalTableOperator(
             task_id="ingest_parquet_bq_table",
-            bucket=bucket,
-            source_objects=[gs_path],
-            destination_project_dataset_table=table_id,
-            source_format="PARQUET",
+            table_resource={
+                "tableReference": {
+                    "datasetId": "{{ params.dataset }}",
+                    "tableId": table_name,
+                },
+                "externalDataConfiguration": {
+                    "sourceUris": [gs_path],
+                    "sourceFormat": "PARQUET",
+                },
+            }
         )
 
-        remove_existing >> ingest_parquet  # type: ignore
+        remove_existing >> register_bq  # type: ignore
 
     # define dag
     csv_path = download()
     pq_path = convert_parquet(csv_path)
-    gs_path = upload_gcs(pq_path)
+    gs_path = upload_gcs(pq_path, prefix=f"{DATASET}/raw")
 
     register_bq = register_bq_table(gs_path)
     create_dataset = BigQueryCreateEmptyDatasetOperator(
