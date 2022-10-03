@@ -30,7 +30,7 @@ GCP_PROJECT = "mrzzy-data-eng-zoomcamp"
     start_date=datetime(2019, 1, 2, tz=UTC),
     end_date=datetime(2021, 8, 2, tz=UTC),
     schedule_interval="0 3 2 * *",  # 3am on the 2nd of every month
-    catchup=False,
+    catchup=True,
     params={
         "project_id": GCP_PROJECT,
         "dataset": DATASET,
