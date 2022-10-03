@@ -34,6 +34,9 @@ GCP_PROJECT = "mrzzy-data-eng-zoomcamp"
     params={
         "project_id": GCP_PROJECT,
         "dataset": DATASET,
+        "retries": 3,
+        "retry_delay": 60.0,
+        "retry_exponential_backoff": True,
     },
 )
 def build_dag():
