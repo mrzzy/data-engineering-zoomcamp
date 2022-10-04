@@ -29,11 +29,28 @@ GCP_PROJECT = "mrzzy-data-eng-zoomcamp"
 
 class NYTaxiDatasetType(Enum):
     """NY Taxi Dataset variant types"""
-
     Yellow = "yellow"
     Green = "green"
     ForHire = "fhv"
+    Zone = "zone"
 
+
+def download_gzip(url: str, path: str):
+    """Download the GZIP at the given URL and writes its decompressed form at path."""
+    with requests.get(url
+        ) as r, open(path, "wb") as f:
+        data = gzip.decompress(r.content)
+        f.write(data)
+
+def to_parquet_csv(csv_path: str, pq_path):
+    """Convert the CSV at the given path to a Parquet file at the given path."""
+    table = csv.read_csv(csv_path)
+    os.remove(csv_path)
+    parquet.write_table(
+        table,
+        where=pq_path,
+        compression="snappy",
+    )
 
 def build_dag(
     dataset_type: NYTaxiDatasetType,
@@ -70,6 +87,7 @@ def build_dag(
             "retry_exponential_backoff": True,
         },
     )
+
     def build():
         f"""
         Ingest NY Taxi Data ({dataset_type.value}) into BigQuery.
@@ -92,12 +110,10 @@ def build_dag(
             # download gzipped data into buffer
             partition = data_interval_start.strftime("%Y-%m")  # type: ignore
             csv_path = f"{dataset_type.value}_tripdata_{partition}.csv"
-            with requests.get(
-                f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{dataset_type.value}/{dataset_type.value}_tripdata_{partition}.csv.gz"
-            ) as r, open(csv_path, "wb") as f:
-                csv = gzip.decompress(r.content)
-                f.write(csv)
-
+            download_gzip(
+                url=f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{dataset_type.value}/{dataset_type.value}_tripdata_{partition}.csv.gz",
+                path=csv_path
+            )
             return csv_path
 
         @task
@@ -107,14 +123,8 @@ def build_dag(
             Returns the path to the converted Parquet File.
             """
             # rewrite csv as parquet file
-            table = csv.read_csv(csv_path)
-            os.remove(csv_path)
             pq_path = csv_path.replace("csv", "pq")
-            parquet.write_table(
-                table,
-                where=pq_path,
-                compression="snappy",
-            )
+            to_parquet_csv(csv_path, pq_path)
             return pq_path
 
         @task
