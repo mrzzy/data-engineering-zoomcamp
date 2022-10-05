@@ -79,9 +79,12 @@ def build_dag(
             Name of the BigQuery dataset to ingest to.
     """
     # while other dataset types are partitioned by year-month, the taxi
-    # is special in that it can be ingested one shot.
+    # is special in that it only needs to be ingested oncea
     schedule_params = (
-        {}
+        {
+            "start_date": datetime(2019, 1, 2, tz=UTC),
+            "end_date": datetime(2019, 1, 2, tz=UTC),
+        }
         if dataset_type == NYTaxiDatasetType.Zone
         else {
             "start_date": datetime(2019, 1, 2, tz=UTC),
