@@ -93,6 +93,8 @@ Use the same frequency and the start date as for the yellow taxi dataset
 
 Question: how many DAG runs are green for data in 2019 after finishing everything? 
 
+**All except one.**
+
 Note: when processing the data for 2020-01 you probably will get an error. It's up 
 to you to decide what to do with it - for Week 3 homework we won't need 2020 data.
 
@@ -113,7 +115,7 @@ How often does it need to run?
 * Daily
 * Monthly
 * Yearly
-* Once
+* **Once**
 
 
 ## Submitting the solutions
