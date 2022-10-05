@@ -4,23 +4,23 @@
 # Ingest Yellow Taxi Data to GCP
 #
 
+import gzip
+import os
 from enum import Enum
-import gzip, os
-from pendulum.tz.timezone import UTC
+from typing import Callable, Optional
+
 import requests
-
-from typing import Optional
-
 from airflow.decorators import dag, task, task_group
-from pendulum import datetime
-from pendulum.datetime import DateTime
-from pyarrow import csv, parquet
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryCreateExternalTableOperator,
     BigQueryDeleteTableOperator,
 )
+from pendulum import datetime
+from pendulum.datetime import DateTime
+from pendulum.tz.timezone import UTC
+from pyarrow import csv, parquet
 
 BUCKET = "dtc_data_lake_mrzzy-data-eng-zoomcamp"
 BQ_DATASET = "nyc_tlc"
@@ -29,18 +29,24 @@ GCP_PROJECT = "mrzzy-data-eng-zoomcamp"
 
 class NYTaxiDatasetType(Enum):
     """NY Taxi Dataset variant types"""
+
     Yellow = "yellow"
     Green = "green"
     ForHire = "fhv"
     Zone = "zone"
 
 
+def download_file(url: str, path: str, unpack: Callable[[bytes], bytes] = lambda b: b):
+    """Download the file at the given URL and writes its contents at path."""
+    with requests.get(url) as r, open(path, "wb") as f:
+        data = unpack(r.content)
+        f.write(data)
+
+
 def download_gzip(url: str, path: str):
     """Download the GZIP at the given URL and writes its decompressed form at path."""
-    with requests.get(url
-        ) as r, open(path, "wb") as f:
-        data = gzip.decompress(r.content)
-        f.write(data)
+    download_file(url, path, unpack=gzip.decompress)
+
 
 def to_parquet_csv(csv_path: str, pq_path):
     """Convert the CSV at the given path to a Parquet file at the given path."""
@@ -52,11 +58,12 @@ def to_parquet_csv(csv_path: str, pq_path):
         compression="snappy",
     )
 
+
 def build_dag(
     dataset_type: NYTaxiDatasetType,
-    gcp_project=GCP_PROJECT,
-    bucket=BUCKET,
-    bq_dataset=BQ_DATASET,
+    gcp_project: str = GCP_PROJECT,
+    bucket: str = BUCKET,
+    bq_dataset: str = BQ_DATASET,
 ) -> DAG:
     """
     Build an Airflow DAG to ingest the NYTaxi Dataset into BigQuery.
@@ -73,12 +80,17 @@ def build_dag(
     """
     # while other dataset types are partitioned by year-month, the taxi
     # is special in that it can be ingested one shot.
-    schedule_params = {} if dataset_type == NYTaxiDatasetType.Zone else {
-        "start_date": datetime(2019, 1, 2, tz=UTC),
-        "end_date": datetime(2021, 8, 2, tz=UTC),
-        "schedule_interval": "0 3 2 * *",  # 3am on the 2nd of every month
-        "catchup": True,
-    }
+    schedule_params = (
+        {}
+        if dataset_type == NYTaxiDatasetType.Zone
+        else {
+            "start_date": datetime(2019, 1, 2, tz=UTC),
+            "end_date": datetime(2021, 8, 2, tz=UTC),
+            "schedule_interval": "0 3 2 * *",  # 3am on the 2nd of every month
+            "catchup": True,
+        }
+    )
+
     @dag(
         dag_id=f"ingest-nyc-tlc-{dataset_type.value}",
         # TODO(mrzzy): pushdown params to specific tasks
@@ -89,7 +101,7 @@ def build_dag(
             "retry_delay": 60.0,
             "retry_exponential_backoff": True,
         },
-        **schedule_params
+        **schedule_params,
     )
     def build():
         f"""
@@ -105,17 +117,28 @@ def build_dag(
         """
 
         @task
-        def download(data_interval_start: Optional[DateTime] = None) -> str:
+        def download(
+            dataset_type: NYTaxiDatasetType,
+            data_interval_start: Optional[DateTime] = None,
+        ) -> str:
             """
             Download & Uncompress Data CSV.
             Returns the path to the downloaded CSV File.
             """
-            # download gzipped data into buffer
+            # download data from github
+            dataset_prefix = (
+                f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download"
+            )
+            if dataset_type == NYTaxiDatasetType.Zone:
+                csv_path = "taxi_zone_lookup.csv"
+                download_file(f"{dataset_prefix}/misc/taxi_zone_lookup.csv", csv_path)
+                return csv_path
+
             partition = data_interval_start.strftime("%Y-%m")  # type: ignore
             csv_path = f"{dataset_type.value}_tripdata_{partition}.csv"
             download_gzip(
-                url=f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/{dataset_type.value}/{dataset_type.value}_tripdata_{partition}.csv.gz",
-                path=csv_path
+                url=f"{dataset_prefix}/{dataset_type.value}/{dataset_type.value}_tripdata_{partition}.csv.gz",
+                path=csv_path,
             )
             return csv_path
 
@@ -147,14 +170,17 @@ def build_dag(
 
         @task_group
         def register_bq_table(
+            dataset_type: NYTaxiDatasetType,
             gs_path: str,
         ):
             """
             Register the given Parquet file on the GCS Bucket into BigQuery as a external table.
             """
             # fully replace existing table with new table if it already exists
-            table_name = (
-                dataset_type.value + "_{{ data_interval_start.strftime('%Y_%m') }}"
+            table_name = dataset_type.value + (
+                ""
+                if dataset_type == NYTaxiDatasetType.Zone
+                else "_{{ data_interval_start.strftime('%Y_%m') }}"
             )
 
             remove_existing = BigQueryDeleteTableOperator(
@@ -180,13 +206,14 @@ def build_dag(
             remove_existing >> register_bq  # type: ignore
 
         # define dag
-        csv_path = download()
+        csv_path = download(dataset_type)
         pq_path = convert_parquet(csv_path)
         gs_path = upload_gcs(pq_path, prefix=f"nyc_tlc/{dataset_type.value}/raw")
-        register_bq_table(gs_path)
+        register_bq_table(dataset_type, gs_path)
 
     return build()
 
 
 yellow_dag = build_dag(NYTaxiDatasetType.Yellow)
 for_hire_dag = build_dag(NYTaxiDatasetType.ForHire)
+zone_dag = build_dag(NYTaxiDatasetType.Zone)
