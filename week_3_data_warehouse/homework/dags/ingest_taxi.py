@@ -172,7 +172,7 @@ def build_dag(
             return f"gs://{bucket}/{dest_path}"
 
         @task_group
-        def register_bq_table(
+        def register_external_bq_table(
             dataset_type: NYTaxiDatasetType,
             gs_path: str,
         ):
@@ -212,7 +212,7 @@ def build_dag(
         csv_path = download(dataset_type)
         pq_path = convert_parquet(csv_path)
         gs_path = upload_gcs(pq_path, prefix=f"nyc_tlc/{dataset_type.value}/raw")
-        register_bq_table(dataset_type, gs_path)
+        register_external_bq_table(dataset_type, gs_path)
 
     return build()
 
