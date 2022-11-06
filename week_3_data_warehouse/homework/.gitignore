@@ -1,0 +1,7 @@
+# vim editor
+.vim/
+# docker volumes
+credentials/
+logs/
+# virtualenv
+venv/
