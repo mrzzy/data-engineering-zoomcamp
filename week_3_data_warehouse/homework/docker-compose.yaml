@@ -1,0 +1,67 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    env_file:
+      - .env
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    ports:
+    - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+  migrate-db:
+    build: .
+    image: airflow
+    command: db upgrade
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+
+  scheduler:
+    image: airflow
+    command: scheduler
+    restart: on-failure
+    depends_on:
+      migrate-db:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./credentials:/opt/airflow/credentials
+    user: "${AIRFLOW_UID-0}"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z localhost 8793" ]
+      timeout: 30s
+      retries: 3
+
+  webserver:
+    image: airflow
+    restart: on-failure
+    command: webserver
+    depends_on:
+      migrate-db:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./credentials:/opt/airflow/credentials
+    ports:
+      - "8080:8080"
+    user: "${AIRFLOW_UID-0}"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z localhost 8080" ]
+      timeout: 30s
+      retries: 3
+volumes:
+  postgres-db-volume:
+
