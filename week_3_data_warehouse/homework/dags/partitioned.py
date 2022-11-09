@@ -109,7 +109,7 @@ def build_dag(
         register_table = register_external_bq_table(
             gs_path,
             bq_dataset,
-            table_name="%s_{{ data_interval_start.strftime('%Y_%m') }}".format(dataset_type.value),
+            table_name=dataset_type.value + "_{{ data_interval_start.strftime('%Y_%m') }}",
         )
         # rewrite table name partitioned external tables into a bigquery native partitioned table.
         partition_table = BigQueryInsertJobOperator(
