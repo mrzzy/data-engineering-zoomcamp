@@ -6,7 +6,7 @@
 
 
 import os
-from collections.abc import Callable
+from typing import Callable
 from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateExternalTableOperator, BigQueryDeleteTableOperator
 
 import requests
