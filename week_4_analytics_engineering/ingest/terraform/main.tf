@@ -30,3 +30,9 @@ provider "google" {
   region = local.region
   zone   = "${local.region}-c"
 }
+
+# GCS bucket to store ingested raw data
+resource "google_storage_bucket" "lake" {
+  name = "${local.project_id}-data-lake"
+  location = "${local.region}"
+}
