@@ -1,6 +1,7 @@
 /*
  * Data Engineering Zoomcamp
  * Terraform Deployment
+ * NYTaxi INgest Pipeline
 */
 
 locals {
@@ -31,8 +32,14 @@ provider "google" {
   zone   = "${local.region}-c"
 }
 
-# GCS bucket to store ingested raw data
+# GCS bucket as data lake
 resource "google_storage_bucket" "lake" {
-  name = "${local.project_id}-data-lake"
-  location = "${local.region}"
+  name = "${local.project_id}-nytaxi"
+  location = local.region
+}
+
+# BigQuery dataset as data warehouse
+resource "google_bigquery_dataset" "warehouse" {
+  dataset_id = "nytaxi"
+  location = local.region
 }
