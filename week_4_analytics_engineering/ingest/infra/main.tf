@@ -60,7 +60,7 @@ resource "google_project_iam_binding" "gcs" {
 }
 
 resource "google_bigquery_dataset_iam_binding" "warehouse" {
-  dataset_id = google_bigquery_dataset.warehouse.id
+  dataset_id = google_bigquery_dataset.warehouse.dataset_id
   role       = "roles/bigquery.dataEditor"
   members = [
     google_service_account.pipeline.member
