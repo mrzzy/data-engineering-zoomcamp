@@ -53,7 +53,15 @@ resource "google_service_account" "pipeline" {
 # IAM role bindings
 resource "google_project_iam_binding" "gcs" {
   project = local.project_id
-  role = "roles/storage.objectAdmin"
+  role    = "roles/storage.objectAdmin"
+  members = [
+    google_service_account.pipeline.member
+  ]
+}
+
+resource "google_bigquery_dataset_iam_binding" "warehouse" {
+  dataset_id = google_bigquery_dataset.warehouse.id
+  role       = "roles/bigquery.dataEditor"
   members = [
     google_service_account.pipeline.member
   ]
