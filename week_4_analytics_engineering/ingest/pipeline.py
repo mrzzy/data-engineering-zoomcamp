@@ -139,22 +139,25 @@ async def ingest_taxi(
     return await load_gcs_bq(partition_urls=gs_paths, table_id=table_id)
 
 
-if __name__ == "__main__":
-    asyncio.run(
-        asyncio.gather(
-            ingest_taxi(
-                bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-                table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
-                variant=TaxiVariant.Yellow,
-                begin=date(2019, 1, 1),
-                end=date(2020, 12, 1),
-            ),  # type: ignore
-            ingest_taxi(
-                bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-                table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
-                variant=TaxiVariant.Yellow,
-                begin=date(2019, 1, 1),
-                end=date(2019, 12, 1),
-            ),  # type: ignore
-        )
+@flow
+async def ingest_all():
+    return await asyncio.gather(
+        ingest_taxi(
+            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
+            variant=TaxiVariant.Yellow,
+            begin=date(2019, 1, 1),
+            end=date(2020, 12, 1),
+        ),  # type: ignore
+        ingest_taxi(
+            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
+            variant=TaxiVariant.ForHire,
+            begin=date(2019, 1, 1),
+            end=date(2019, 12, 1),
+        ),  # type: ignore
     )
+
+
+if __name__ == "__main__":
+    asyncio.run(ingest_all())
