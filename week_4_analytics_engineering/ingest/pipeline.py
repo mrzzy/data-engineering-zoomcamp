@@ -8,7 +8,7 @@ import logging
 from typing import List
 from google.cloud.bigquery.job import LoadJobConfig
 from prefect import flow, get_run_logger, task
-from datetime import date
+from datetime import date, timedelta
 from enum import Enum
 from google.cloud import storage
 from google.cloud import bigquery
@@ -23,6 +23,7 @@ import requests
 
 class TaxiVariant(Enum):
     Yellow = "yellow"
+    ForHire = "fhv"
 
 
 @task
@@ -63,11 +64,12 @@ async def load_gcs_bq(table_id: str, partition_urls: List[str]):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
     Truncates the table before loading.
 
-    table_id:
-        ID of the BigQuery table to load data to the format
-        <PROJECT_ID>.<DATASET_ID>.<TABLE>
-    partition_urls:
-        List of GCS URLs referencing Parquet partitions on GCS to load.
+    Args:
+        table_id:
+            ID of the BigQuery table to load data to the format
+            <PROJECT_ID>.<DATASET_ID>.<TABLE>
+        partition_urls:
+            List of GCS URLs referencing Parquet partitions on GCS to load.
     """
     bq = bigquery.Client()
 
@@ -86,16 +88,73 @@ async def load_gcs_bq(table_id: str, partition_urls: List[str]):
 
 
 @flow
-async def ingest_taxi(bucket: str, table_id: str, variant: TaxiVariant):
-    gs_path = await load_taxi_gcs(bucket, variant, date(2009, 1, 1))
-    return await load_gcs_bq(partition_urls=[gs_path], table_id=table_id)
+async def ingest_taxi(
+    bucket: str, table_id: str, variant: TaxiVariant, begin: date, end: date
+):
+    """Ingest the given variant of NYC Taxi dataset into a BQ Table.
+
+    Uses GCS Bucket as a staging area before ingesting into BigQuery.
+    Ingest data in month-sized partitions.
+
+    Day of month passed to begin or end arguments are ignored.
+
+    Args:
+        bucket:
+            Name of the GCS Bucket used to stage ingeted data..
+        table_id:
+            ID of the BigQuery table to ingesto data to, the format
+            <PROJECT_ID>.<DATASET_ID>.<TABLE>
+        variant:
+            Variant of the taxi dataset to ingest.
+        begin:
+            First month of the date range of data to ingest.
+        end:
+            Last month of the date range of data to ingest.
+    """
+    # discard day of month by resetting begin & end start of month
+    begin, end = date(begin.year, begin.month, 1), date(end.year, end.month, 1)
+    n_months = (end.year - begin.year) * 12 + end.month - begin.month
+    if n_months < 1:
+        raise ValueError(
+            "Expected begin & end to delimit a date range of at least 1 month"
+        )
+
+    # download partitions in date range.
+    gs_paths = await asyncio.gather(
+        *[
+            load_taxi_gcs(
+                bucket,
+                variant,
+                # calculate parition date i months from begin date
+                date(
+                    year=begin.year + i // 12,
+                    month=begin.month + i % 12,
+                    day=1,
+                ),
+            )
+            for i in range(n_months)
+        ]
+    )
+    # ingest partitions to bigquery
+    return await load_gcs_bq(partition_urls=gs_paths, table_id=table_id)
 
 
 if __name__ == "__main__":
     asyncio.run(
-        ingest_taxi(
-            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
-            variant=TaxiVariant.Yellow,
-        ) # type: ignore
-    )  
+        asyncio.gather(
+            ingest_taxi(
+                bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+                table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
+                variant=TaxiVariant.Yellow,
+                begin=date(2019, 1, 1),
+                end=date(2020, 12, 1),
+            ),  # type: ignore
+            ingest_taxi(
+                bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+                table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
+                variant=TaxiVariant.Yellow,
+                begin=date(2019, 1, 1),
+                end=date(2019, 12, 1),
+            ),  # type: ignore
+        )
+    )
