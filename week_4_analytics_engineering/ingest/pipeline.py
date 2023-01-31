@@ -3,7 +3,6 @@
 # Yellow Taxi Data Pipeline
 #
 
-import asyncio
 import logging
 from typing import List
 from google.cloud.bigquery.job import LoadJobConfig
@@ -27,7 +26,7 @@ class TaxiVariant(Enum):
 
 
 @task
-async def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
+def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
     """Load a variant of of the NYC Taxi Dataset into the given GCS Bucket
 
     Args:
@@ -60,7 +59,7 @@ async def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> s
 
 
 @task
-async def load_gcs_bq(table_id: str, partition_urls: List[str]):
+def load_gcs_bq(table_id: str, partition_urls: List[str]):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
     Truncates the table before loading.
 
@@ -88,7 +87,7 @@ async def load_gcs_bq(table_id: str, partition_urls: List[str]):
 
 
 @flow
-async def ingest_taxi(
+def ingest_taxi(
     bucket: str, table_id: str, variant: TaxiVariant, begin: date, end: date
 ):
     """Ingest the given variant of NYC Taxi dataset into a BQ Table.
@@ -120,44 +119,34 @@ async def ingest_taxi(
         )
 
     # download partitions in date range.
-    gs_paths = await asyncio.gather(
-        *[
-            load_taxi_gcs(
-                bucket,
-                variant,
-                # calculate parition date i months from begin date
-                date(
-                    year=begin.year + i // 12,
-                    month=begin.month + i % 12,
-                    day=1,
-                ),
-            )
-            for i in range(n_months)
-        ]
-    )
+    gs_paths = [
+        load_taxi_gcs(
+            bucket,
+            variant,
+            # calculate parition date i months from begin date
+            date(
+                year=begin.year + i // 12,
+                month=begin.month + i % 12,
+                day=1,
+            ),
+        )
+        for i in range(n_months)
+    ]
     # ingest partitions to bigquery
-    return await load_gcs_bq(partition_urls=gs_paths, table_id=table_id)
-
-
-@flow
-async def ingest_all():
-    return await asyncio.gather(
-        ingest_taxi(
-            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
-            variant=TaxiVariant.Yellow,
-            begin=date(2019, 1, 1),
-            end=date(2020, 12, 1),
-        ),  # type: ignore
-        ingest_taxi(
-            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
-            variant=TaxiVariant.ForHire,
-            begin=date(2019, 1, 1),
-            end=date(2019, 12, 1),
-        ),  # type: ignore
-    )
-
+    load_gcs_bq(partition_urls=gs_paths, table_id=table_id)
 
 if __name__ == "__main__":
-    asyncio.run(ingest_all())
+    ingest_taxi(
+        bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+        table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
+        variant=TaxiVariant.Yellow,
+        begin=date(2019, 1, 1),
+        end=date(2020, 12, 1),
+    )
+    ingest_taxi(
+        bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+        table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
+        variant=TaxiVariant.ForHire,
+        begin=date(2019, 1, 1),
+        end=date(2019, 12, 1),
+    )
