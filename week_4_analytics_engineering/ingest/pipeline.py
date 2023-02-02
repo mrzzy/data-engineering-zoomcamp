@@ -89,27 +89,30 @@ def load_gcs_bq(table_id: str, partition_urls: List[str]):
     log = get_run_logger()
     log.info(f"Loaded {len(partition_urls)} partitions to {table_id}")
 
+
 @task
 def fix_yellow_taxi_type(gs_url: str) -> str:
     """Fix type inconsistency on Yellow variant NYC Taxi partition.
-    
+
     Args:
         gs_url: URL pointing to the Yellow NYC taxi partition to fix.
-    
+
     Returns:
         URL pointing at the rectified partition.
     """
-    yellow = pq.read_table(gs_url) 
+    yellow = pq.read_table(gs_url)
 
     # fix type inconsistency in 'airport_fee' column
-    bad_column, schema = "airport_fee", yellow.schema 
-    schema.set(
+    bad_column, schema = "airport_fee", yellow.schema
+    schema = schema.set(
         schema.get_field_index(bad_column),
-        schema.field(bad_column).with_type(pa.float32())
+        schema.field(bad_column).with_type(pa.float32()),
     )
     fixed = yellow.cast(schema)
 
-    fixed_gs_url = f"nyc_taxi/{TaxiVariant.Yellow.value}_fixed/{basename(gs_url)}"
+    fixed_gs_url = gs_url.replace(
+        f"/{TaxiVariant.Yellow.value}/", f"/{TaxiVariant.Yellow.value}_fixed/"
+    )
     pq.write_table(fixed, fixed_gs_url)
     return fixed_gs_url
 
@@ -134,6 +137,7 @@ def ingest_yellow_taxi(bucket: str, table_id: str, partition: date):
     gs_url = fix_yellow_taxi_type(gs_url)
     load_gcs_bq(partition_urls=[gs_url], table_id=table_id)
 
+
 @flow
 def ingest_fhv_taxi(bucket: str, table_id: str, partition: date):
     """Ingest the ForHire variant of the NYC Taxi dataset into the BQ Table with id.
@@ -152,6 +156,7 @@ def ingest_fhv_taxi(bucket: str, table_id: str, partition: date):
     """
     gs_url = load_taxi_gcs(bucket, TaxiVariant.ForHire, partition)
     load_gcs_bq(partition_urls=[gs_url], table_id=table_id)
+
 
 def monthly_range(begin: date, end: date) -> List[date]:
     """Create a date range with begin & end with dates on monthly interval.
@@ -179,7 +184,6 @@ def monthly_range(begin: date, end: date) -> List[date]:
         )
         for i in range(n_months)
     ]
-
 
 if __name__ == "__main__":
     ingest_yellow_taxi(
