@@ -65,7 +65,7 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 @task
 def load_gcs_bq(table_id: str, partition_urls: List[str]):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
-    Appends data to the table before loading.
+    Truncates existing data to the table (if it exists) before loading.
 
     Args:
         table_id:
@@ -82,7 +82,7 @@ def load_gcs_bq(table_id: str, partition_urls: List[str]):
         destination=TableReference.from_string(table_id),
         job_config=LoadJobConfig(
             source_format=SourceFormat.PARQUET,
-            write_disposition=WriteDisposition.WRITE_APPEND,
+            write_disposition=WriteDisposition.WRITE_TRUNCATE,
         ),
     ).result()
 
@@ -186,8 +186,17 @@ def monthly_range(begin: date, end: date) -> List[date]:
     ]
 
 if __name__ == "__main__":
-    ingest_yellow_taxi(
-        bucket="mrzzy-data-eng-zoomcamp-nytaxi",
-        table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
-        partition=date(2019, 8, 1),
-    )
+    for partition in monthly_range(date(2019, 1, 1), date(2020, 12, 1)):
+        ingest_yellow_taxi(
+            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
+            partition=partition,
+        )
+
+    for partition in monthly_range(date(2019, 1, 1), date(2019, 12, 1)):
+        ingest_fhv_taxi(
+            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
+            partition=partition,
+        )
+    
