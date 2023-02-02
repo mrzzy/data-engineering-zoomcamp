@@ -63,9 +63,8 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task
-def load_gcs_bq(table_id: str, partition_urls: List[str]):
+def load_gcs_bq(table_id: str, partition_urls: List[str], truncate: bool = False):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
-    Truncates existing data to the table (if it exists) before loading.
 
     Args:
         table_id:
@@ -73,6 +72,8 @@ def load_gcs_bq(table_id: str, partition_urls: List[str]):
             <PROJECT_ID>.<DATASET_ID>.<TABLE>
         partition_urls:
             List of GCS URLs referencing Parquet partitions on GCS to load.
+        truncate:
+            Whether to truncate the table if it exists before writing.
     """
     bq = bigquery.Client()
 
@@ -82,7 +83,10 @@ def load_gcs_bq(table_id: str, partition_urls: List[str]):
         destination=TableReference.from_string(table_id),
         job_config=LoadJobConfig(
             source_format=SourceFormat.PARQUET,
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+            write_disposition=(
+                WriteDisposition.WRITE_APPEND 
+                if truncate else WriteDisposition.WRITE_APPEND
+            ),
         ),
     ).result()
 
@@ -118,7 +122,7 @@ def fix_yellow_taxi_type(gs_url: str) -> str:
 
 
 @flow
-def ingest_yellow_taxi(bucket: str, table_id: str, partition: date):
+def ingest_yellow_taxi(bucket: str, table_id: str, partition: date, truncate: bool):
     """Ingest the Yellow variant of the NYC Taxi dataset into the BQ Table with id.
 
     Stages partition data in a GCS Bucket before ingesting into BigQuery.
@@ -132,14 +136,16 @@ def ingest_yellow_taxi(bucket: str, table_id: str, partition: date):
         partition:
             Date of partition to ingest. Since partitions are monthly sized,
             the day of month is disregarded if passed.
+        truncate:
+            Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, TaxiVariant.Yellow, partition)
     gs_url = fix_yellow_taxi_type(gs_url)
-    load_gcs_bq(partition_urls=[gs_url], table_id=table_id)
+    load_gcs_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
 
 
 @flow
-def ingest_fhv_taxi(bucket: str, table_id: str, partition: date):
+def ingest_fhv_taxi(bucket: str, table_id: str, partition: date, truncate: bool):
     """Ingest the ForHire variant of the NYC Taxi dataset into the BQ Table with id.
 
     Stages partition data in a GCS Bucket before ingesting into BigQuery.
@@ -153,9 +159,11 @@ def ingest_fhv_taxi(bucket: str, table_id: str, partition: date):
         partition:
             Date of partition to ingest. Since partitions are monthly sized,
             the day of month is disregarded if passed.
+        truncate:
+            Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, TaxiVariant.ForHire, partition)
-    load_gcs_bq(partition_urls=[gs_url], table_id=table_id)
+    load_gcs_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
 
 
 def monthly_range(begin: date, end: date) -> List[date]:
@@ -186,17 +194,19 @@ def monthly_range(begin: date, end: date) -> List[date]:
     ]
 
 if __name__ == "__main__":
-    for partition in monthly_range(date(2019, 1, 1), date(2020, 12, 1)):
+    for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2020, 12, 1))):
         ingest_yellow_taxi(
             bucket="mrzzy-data-eng-zoomcamp-nytaxi",
             table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
             partition=partition,
+            truncate=i == 0,
         )
 
-    for partition in monthly_range(date(2019, 1, 1), date(2019, 12, 1)):
+    for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2019, 12, 1))):
         ingest_fhv_taxi(
             bucket="mrzzy-data-eng-zoomcamp-nytaxi",
             table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
             partition=partition,
+            truncate=i == 0,
         )
     
