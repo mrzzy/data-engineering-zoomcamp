@@ -84,8 +84,9 @@ def load_gcs_bq(table_id: str, partition_urls: List[str], truncate: bool = False
         job_config=LoadJobConfig(
             source_format=SourceFormat.PARQUET,
             write_disposition=(
-                WriteDisposition.WRITE_APPEND 
-                if truncate else WriteDisposition.WRITE_APPEND
+                WriteDisposition.WRITE_APPEND
+                if truncate
+                else WriteDisposition.WRITE_APPEND
             ),
         ),
     ).result()
@@ -193,6 +194,7 @@ def monthly_range(begin: date, end: date) -> List[date]:
         for i in range(n_months)
     ]
 
+
 if __name__ == "__main__":
     for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2020, 12, 1))):
         ingest_yellow_taxi(
@@ -209,4 +211,3 @@ if __name__ == "__main__":
             partition=partition,
             truncate=i == 0,
         )
-    
