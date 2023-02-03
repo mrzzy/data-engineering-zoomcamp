@@ -18,20 +18,31 @@ from pyarrow import Schema
 
 from taxi import TaxiVariant, ingest_fhv_taxi, ingest_yellow_taxi
 from util import monthly_range
+from zone import ingest_zone
 
 if __name__ == "__main__":
+    gcs_bucket = "mrzzy-data-eng-zoomcamp-nytaxi"
+
+    # ingest yellow taxi records from 2019 jan to 2020 dec
     for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2020, 12, 1))):
         ingest_yellow_taxi(
-            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            bucket=gcs_bucket,
             table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
             partition=partition,
             truncate=i == 0,
         )
 
+    # ingest for hire taxi records from 2019 jan to 2019 dec
     for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2019, 12, 1))):
         ingest_fhv_taxi(
-            bucket="mrzzy-data-eng-zoomcamp-nytaxi",
+            bucket=gcs_bucket,
             table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
             partition=partition,
             truncate=i == 0,
         )
+
+    # ingest taxi zone lookup table
+    ingest_zone(
+        bucket=gcs_bucket,
+        table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.zone",
+    )

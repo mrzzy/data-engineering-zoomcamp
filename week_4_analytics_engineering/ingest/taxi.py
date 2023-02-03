@@ -8,6 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
+# TODO(mrzzy): consolidate logging in @flow
 from datetime import date
 from enum import Enum
 from typing import List
@@ -52,7 +53,7 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task
-def load_gcs_bq(table_id: str, partition_urls: List[str], truncate: bool = False):
+def load_parquet_bq(table_id: str, partition_urls: List[str], truncate: bool = False):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
 
     Args:
@@ -66,6 +67,24 @@ def load_gcs_bq(table_id: str, partition_urls: List[str], truncate: bool = False
             Whether to truncate the table if it exists before writing.
     """
     bq = bigquery.Client()
+    bq = bigquery.Client()
+
+    # ingest partitions into bigquery
+    bq.load_table_from_uri(
+        source_uris=partition_urls,
+        destination=TableReference.from_string(table_id),
+        job_config=LoadJobConfig(
+            source_format=SourceFormat.PARQUET,
+            write_disposition=(
+                WriteDisposition.WRITE_APPEND
+                if truncate
+                else WriteDisposition.WRITE_APPEND
+            ),
+        ),
+    ).result()
+
+    log = get_run_logger()
+    log.info(f"Loaded {len(partition_urls)} partitions to {table_id}")
 
     # ingest partitions into bigquery
     bq.load_table_from_uri(
@@ -132,7 +151,7 @@ def ingest_yellow_taxi(bucket: str, table_id: str, partition: date, truncate: bo
     """
     gs_url = load_taxi_gcs(bucket, TaxiVariant.Yellow, partition)
     gs_url = fix_yellow_taxi_type(gs_url)
-    load_gcs_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
+    load_parquet_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
 
 
 @flow
@@ -154,4 +173,4 @@ def ingest_fhv_taxi(bucket: str, table_id: str, partition: date, truncate: bool)
             Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, TaxiVariant.ForHire, partition)
-    load_gcs_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
+    load_parquet_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
