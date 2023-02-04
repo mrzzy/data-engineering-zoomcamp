@@ -54,6 +54,33 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task
+def fix_yellow_taxi_type(gs_url: str) -> str:
+    """Fix type inconsistency on Yellow variant NYC Taxi partition.
+
+    Args:
+        gs_url: URL pointing to the Yellow NYC taxi partition to fix.
+
+    Returns:
+        URL pointing at the rectified partition.
+    """
+    yellow = pq.read_table(gs_url)
+
+    # fix type inconsistency in 'airport_fee' column
+    bad_column, schema = "airport_fee", yellow.schema
+    schema = schema.set(
+        schema.get_field_index(bad_column),
+        schema.field(bad_column).with_type(pa.float32()),
+    )
+    fixed = yellow.cast(schema)
+
+    fixed_gs_url = gs_url.replace(
+        f"/{TaxiVariant.Yellow.value}/", f"/{TaxiVariant.Yellow.value}_fixed/"
+    )
+    pq.write_table(fixed, fixed_gs_url)
+    return fixed_gs_url
+
+
+@task
 def load_parquet_bq(
     table_id: str, partition_urls: List[str], schema_json: str, truncate: bool = False
 ):
@@ -114,6 +141,8 @@ def ingest_taxi(
             Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, variant, partition)
+    if variant == TaxiVariant.Yellow:
+        gs_url = fix_yellow_taxi_type(gs_url)
     load_parquet_bq(
         table_id=table_id,
         partition_urls=[gs_url],
