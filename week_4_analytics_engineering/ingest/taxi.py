@@ -4,6 +4,7 @@
 # Yellow & ForHire Taxi records
 #
 
+import os.path as path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -53,7 +54,9 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task
-def load_parquet_bq(table_id: str, partition_urls: List[str], truncate: bool = False):
+def load_parquet_bq(
+    table_id: str, partition_urls: List[str], schema_json: str, truncate: bool = False
+):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
 
     Args:
@@ -62,12 +65,12 @@ def load_parquet_bq(table_id: str, partition_urls: List[str], truncate: bool = F
             <PROJECT_ID>.<DATASET_ID>.<TABLE>
         partition_urls:
             List of GCS URLs referencing Parquet partitions on GCS to load.
+        schema_json
+            Path to a JSON schema file used to define the schema of the loaded table
         truncate:
-
             Whether to truncate the table if it exists before writing.
     """
     bq = bigquery.Client()
-    bq = bigquery.Client()
 
     # ingest partitions into bigquery
     bq.load_table_from_uri(
@@ -75,23 +78,7 @@ def load_parquet_bq(table_id: str, partition_urls: List[str], truncate: bool = F
         destination=TableReference.from_string(table_id),
         job_config=LoadJobConfig(
             source_format=SourceFormat.PARQUET,
-            write_disposition=(
-                WriteDisposition.WRITE_APPEND
-                if truncate
-                else WriteDisposition.WRITE_APPEND
-            ),
-        ),
-    ).result()
-
-    log = get_run_logger()
-    log.info(f"Loaded {len(partition_urls)} partitions to {table_id}")
-
-    # ingest partitions into bigquery
-    bq.load_table_from_uri(
-        source_uris=partition_urls,
-        destination=TableReference.from_string(table_id),
-        job_config=LoadJobConfig(
-            source_format=SourceFormat.PARQUET,
+            schema=bq.schema_from_json(schema_json),
             write_disposition=(
                 WriteDisposition.WRITE_APPEND
                 if truncate
@@ -104,40 +91,17 @@ def load_parquet_bq(table_id: str, partition_urls: List[str], truncate: bool = F
     log.info(f"Loaded {len(partition_urls)} partitions to {table_id}")
 
 
-@task
-def fix_yellow_taxi_type(gs_url: str) -> str:
-    """Fix type inconsistency on Yellow variant NYC Taxi partition.
-
-    Args:
-        gs_url: URL pointing to the Yellow NYC taxi partition to fix.
-
-    Returns:
-        URL pointing at the rectified partition.
-    """
-    yellow = pq.read_table(gs_url)
-
-    # fix type inconsistency in 'airport_fee' column
-    bad_column, schema = "airport_fee", yellow.schema
-    schema = schema.set(
-        schema.get_field_index(bad_column),
-        schema.field(bad_column).with_type(pa.float32()),
-    )
-    fixed = yellow.cast(schema)
-
-    fixed_gs_url = gs_url.replace(
-        f"/{TaxiVariant.Yellow.value}/", f"/{TaxiVariant.Yellow.value}_fixed/"
-    )
-    pq.write_table(fixed, fixed_gs_url)
-    return fixed_gs_url
-
-
 @flow
-def ingest_yellow_taxi(bucket: str, table_id: str, partition: date, truncate: bool):
-    """Ingest the Yellow variant of the NYC Taxi dataset into the BQ Table with id.
+def ingest_taxi(
+    variant: TaxiVariant, bucket: str, table_id: str, partition: date, truncate: bool
+):
+    """Ingest the variant of the NYC Taxi dataset into the BQ Table with id.
 
     Stages partition data in a GCS Bucket before ingesting into BigQuery.
 
     Args:
+        variant:
+            Variant of thne NYC Taxi dataset to ingest.
         bucket:
             Name of the GCS Bucket used to stage ingested data.
         table_id:
@@ -149,28 +113,12 @@ def ingest_yellow_taxi(bucket: str, table_id: str, partition: date, truncate: bo
         truncate:
             Whether to truncate the table if it exists before writing.
     """
-    gs_url = load_taxi_gcs(bucket, TaxiVariant.Yellow, partition)
-    gs_url = fix_yellow_taxi_type(gs_url)
-    load_parquet_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
-
-
-@flow
-def ingest_fhv_taxi(bucket: str, table_id: str, partition: date, truncate: bool):
-    """Ingest the ForHire variant of the NYC Taxi dataset into the BQ Table with id.
-
-    Stages partition data in a GCS Bucket before ingesting into BigQuery.
-
-    Args:
-        bucket:
-            Name of the GCS Bucket used to stage ingested data.
-        table_id:
-            ID of the BigQuery table to ingesto data to, the format
-            <PROJECT_ID>.<DATASET_ID>.<TABLE>
-        partition:
-            Date of partition to ingest. Since partitions are monthly sized,
-            the day of month is disregarded if passed.
-        truncate:
-            Whether to truncate the table if it exists before writing.
-    """
-    gs_url = load_taxi_gcs(bucket, TaxiVariant.ForHire, partition)
-    load_parquet_bq(partition_urls=[gs_url], table_id=table_id, truncate=truncate)
+    gs_url = load_taxi_gcs(bucket, variant, partition)
+    load_parquet_bq(
+        table_id=table_id,
+        partition_urls=[gs_url],
+        schema_json=path.join(
+            path.dirname(__file__), "schemas", f"{variant.value}.json"
+        ),
+        truncate=truncate,
+    )
