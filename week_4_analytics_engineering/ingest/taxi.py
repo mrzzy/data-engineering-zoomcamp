@@ -5,6 +5,7 @@
 #
 
 import os.path as path
+from prefect.tasks import task_input_hash
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -27,7 +28,7 @@ class TaxiVariant(Enum):
     ForHire = "fhv"
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
     """Load a variant of of the NYC Taxi Dataset into the given GCS Bucket
 
@@ -53,7 +54,7 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
     )
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def fix_yellow_taxi_type(gs_url: str) -> str:
     """Fix type inconsistency on Yellow variant NYC Taxi partition.
 
@@ -80,7 +81,7 @@ def fix_yellow_taxi_type(gs_url: str) -> str:
     return fixed_gs_url
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def load_parquet_bq(
     table_id: str, partition_urls: List[str], schema_json: str, truncate: bool = False
 ):
