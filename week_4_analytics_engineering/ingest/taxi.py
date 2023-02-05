@@ -55,29 +55,37 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task(cache_key_fn=task_input_hash)
-def fix_yellow_taxi_type(gs_url: str) -> str:
-    """Fix type inconsistency on Yellow variant NYC Taxi partition.
+def fix_taxi_type(gs_url: str, variant: TaxiVariant) -> str:
+    """Fix type inconsistency on NYC Taxi partition.
 
     Args:
-        gs_url: URL pointing to the Yellow NYC taxi partition to fix.
-
+        gs_url: URL pointing to the NYC taxi partition to fix.
+        variant: Variant of the NYC Taxi dataset to fix.
     Returns:
         URL pointing at the rectified partition.
     """
-    yellow = pq.read_table(gs_url)
+    partition = pq.read_table(gs_url)
 
-    # fix type inconsistency in 'airport_fee' column
-    bad_column, schema = "airport_fee", yellow.schema
-    schema = schema.set(
-        schema.get_field_index(bad_column),
-        schema.field(bad_column).with_type(pa.float32()),
-    )
-    fixed = yellow.cast(schema)
+    if variant == TaxiVariant.Yellow:
+        to_fix = {"airport_fee": pa.float32()}
+    elif variant == TaxiVariant.ForHire:
+        to_fix = {"SR_Flag": pa.int32()}
+    else:
+        raise ValueError(f"Unsupported Taxi Variant: {variant.variant}")
 
+    # fix type inconsistencies
+    for bad_column, cast_type in to_fix.items():
+        schema = partition.schema
+        schema = schema.set(
+            schema.get_field_index(bad_column), schema.field(bad_column).with_type(cast_type)
+        )
+        partition = partition.cast(schema)
+
+    # write fixed partition back to GCS
     fixed_gs_url = gs_url.replace(
         f"/{TaxiVariant.Yellow.value}/", f"/{TaxiVariant.Yellow.value}_fixed/"
     )
-    pq.write_table(fixed, fixed_gs_url)
+    pq.write_table(partition, fixed_gs_url)
     return fixed_gs_url
 
 
@@ -142,8 +150,7 @@ def ingest_taxi(
             Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, variant, partition)
-    if variant == TaxiVariant.Yellow:
-        gs_url = fix_yellow_taxi_type(gs_url)
+    gs_url = fix_taxi_type(gs_url, variant)
     load_parquet_bq(
         table_id=table_id,
         partition_urls=[gs_url],
@@ -151,4 +158,4 @@ def ingest_taxi(
             path.dirname(__file__), "schemas", f"{variant.value}.json"
         ),
         truncate=truncate,
-    )
+)
