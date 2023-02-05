@@ -54,7 +54,7 @@ def load_csv_bq(table_id: str, csv_urls: List[str]):
         source_uris=csv_urls,
         destination=TableReference.from_string(table_id),
         job_config=LoadJobConfig(
-            source_format=SourceFormat.PARQUET,
+            source_format=SourceFormat.CSV,
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
             # first row is header, autodetect schema
             skip_leading_rows=1,
