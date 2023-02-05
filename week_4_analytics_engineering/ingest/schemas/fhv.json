@@ -27,7 +27,7 @@
   {
     "mode": "NULLABLE",
     "name": "SR_Flag",
-    "type": "INTEGER"
+    "type": "FLOAT"
   },
   {
     "mode": "NULLABLE",
