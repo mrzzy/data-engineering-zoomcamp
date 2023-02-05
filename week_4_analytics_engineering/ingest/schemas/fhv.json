@@ -17,12 +17,12 @@
   {
     "mode": "NULLABLE",
     "name": "PUlocationID",
-    "type": "FLOAT"
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
     "name": "DOlocationID",
-    "type": "FLOAT"
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
