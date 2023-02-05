@@ -69,7 +69,11 @@ def fix_taxi_type(gs_url: str, variant: TaxiVariant) -> str:
     if variant == TaxiVariant.Yellow:
         to_fix = {"airport_fee": pa.float32()}
     elif variant == TaxiVariant.ForHire:
-        to_fix = {"SR_Flag": pa.int32()}
+        to_fix = {
+            "SR_Flag": pa.int8(),
+            "PUlocationID": pa.int64(),
+            "DOlocationID": pa.int64(),
+        }
     else:
         raise ValueError(f"Unsupported Taxi Variant: {variant.variant}")
 
@@ -77,7 +81,8 @@ def fix_taxi_type(gs_url: str, variant: TaxiVariant) -> str:
     for bad_column, cast_type in to_fix.items():
         schema = partition.schema
         schema = schema.set(
-            schema.get_field_index(bad_column), schema.field(bad_column).with_type(cast_type)
+            schema.get_field_index(bad_column),
+            schema.field(bad_column).with_type(cast_type),
         )
         partition = partition.cast(schema)
 
@@ -158,4 +163,4 @@ def ingest_taxi(
             path.dirname(__file__), "schemas", f"{variant.value}.json"
         ),
         truncate=truncate,
-)
+    )
