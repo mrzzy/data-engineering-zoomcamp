@@ -1,0 +1,13 @@
+
+Welcome to BigQuery! This script will walk you through the 
+process of initializing your .bigqueryrc configuration file.
+
+First, we need to set up your credentials if they do not 
+already exist.
+
+Setting project_id mrzzy-sandbox as the default.
+
+BigQuery configuration complete! Type "bq" to get started.
+
+BigQuery error in show operation: Not found: Dataset mrzzy-sandbox:mrzzy-data-
+eng-zoomcamp.nytaxi

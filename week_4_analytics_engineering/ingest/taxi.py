@@ -25,6 +25,7 @@ from util import load_url_gcs
 
 class TaxiVariant(Enum):
     Yellow = "yellow"
+    Green = "green"
     ForHire = "fhv"
 
 
@@ -75,7 +76,7 @@ def fix_taxi_type(gs_url: str, variant: TaxiVariant) -> str:
             "DOlocationID": pa.int64(),
         }
     else:
-        raise ValueError(f"Unsupported Taxi Variant: {variant.variant}")
+        raise ValueError(f"Unsupported Taxi Variant: {variant.value}")
 
     # fix type inconsistencies
     for bad_column, cast_type in to_fix.items():
@@ -155,7 +156,9 @@ def ingest_taxi(
             Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, variant, partition)
-    gs_url = fix_taxi_type(gs_url, variant)
+    if variant in [TaxiVariant.Yellow, TaxiVariant.ForHire]:
+        gs_url = fix_taxi_type(gs_url, variant)
+
     load_parquet_bq(
         table_id=table_id,
         partition_urls=[gs_url],
