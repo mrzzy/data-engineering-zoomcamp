@@ -10,7 +10,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-# TODO(mrzzy): consolidate logging in @flow
 from datetime import date
 from enum import Enum
 from typing import Any, Dict, List
@@ -117,9 +116,6 @@ def load_parquet_bq(
         ),
     ).result()
 
-    log = get_run_logger()
-    log.info(f"Loaded {len(partition_urls)} partitions to {table_id}")
-
 
 @flow
 def ingest_taxi(
@@ -143,6 +139,7 @@ def ingest_taxi(
         truncate:
             Whether to truncate the table if it exists before writing.
     """
+    log = get_run_logger()
     gs_url = load_taxi_gcs(bucket, variant, partition)
 
     # fix type inconsistencies
@@ -159,6 +156,7 @@ def ingest_taxi(
     else:
         raise ValueError(f"Unsupported Taxi Variant: {variant.value}")
     gs_url = fix_taxi_type(gs_url, to_fix)
+    log.info(f"Fixed types on  {variant.value} - {partition:%Y-%m} partition in GCS")
 
     load_parquet_bq(
         table_id=table_id,
@@ -168,3 +166,4 @@ def ingest_taxi(
         ),
         truncate=truncate,
     )
+    log.info(f"Loaded {variant.value} - {partition:%Y-%m} partition into BigQuery")

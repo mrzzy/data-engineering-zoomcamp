@@ -9,7 +9,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.enums import WriteDisposition
 from google.cloud.bigquery.job import LoadJobConfig, SourceFormat
 from google.cloud.bigquery.table import TableReference
-from prefect import flow, task
+from prefect import flow, get_run_logger, task
 from prefect.tasks import task_input_hash
 
 from util import load_url_gcs
@@ -76,5 +76,8 @@ def ingest_zone(bucket: str, table_id: str):
             ID of the BigQuery table to ingesto data to, the format
             <PROJECT_ID>.<DATASET_ID>.<TABLE>
     """
+    log = get_run_logger()
     gs_url = load_zone_gcs(bucket)
+    log.info(f"Load Zone CSV to GCS")
     load_csv_bq(table_id, csv_urls=[gs_url])
+    log.info(f"Ingested Zone CSV into BigQuery")

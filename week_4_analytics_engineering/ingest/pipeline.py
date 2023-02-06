@@ -22,8 +22,19 @@ from zone import ingest_zone
 
 if __name__ == "__main__":
     gcs_bucket = "mrzzy-data-eng-zoomcamp-nytaxi"
+
+    # ingest yellow taxi records from 2019 jan to 2020 dec
+    for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2020, 12, 1))):
+        ingest_taxi(
+            variant=TaxiVariant.Yellow,
+            bucket=gcs_bucket,
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.Yellow.value}",
+            partition=partition,
+            truncate=i == 0,
+        )
+
     # ingest green taxi records from 2019 jan to 2019 dec
-    for i, partition in enumerate(monthly_range(date(2019, 9, 1), date(2019, 12, 1))):
+    for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2019, 12, 1))):
         ingest_taxi(
             variant=TaxiVariant.Green,
             bucket=gcs_bucket,
@@ -31,3 +42,19 @@ if __name__ == "__main__":
             partition=partition,
             truncate=i == 0,
         )
+
+    # ingest for hire taxi records from 2019 jan to 2019 dec
+    for i, partition in enumerate(monthly_range(date(2019, 1, 1), date(2019, 12, 1))):
+        ingest_taxi(
+            variant=TaxiVariant.ForHire,
+            bucket=gcs_bucket,
+            table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.{TaxiVariant.ForHire.value}",
+            partition=partition,
+            truncate=i == 0,
+        )
+
+    # ingest taxi zone lookup table
+    ingest_zone(
+        bucket=gcs_bucket,
+        table_id=f"mrzzy-data-eng-zoomcamp.nytaxi.zone",
+    )

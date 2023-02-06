@@ -8,7 +8,6 @@ from datetime import date
 from typing import List
 import requests
 from google.cloud import storage
-from prefect import get_run_logger
 
 
 def load_url_gcs(url: str, bucket: str, path: str) -> str:
@@ -27,9 +26,6 @@ def load_url_gcs(url: str, bucket: str, path: str) -> str:
     response = requests.get(url)
     blob = storage.Client().bucket(bucket).blob(path)
     blob.upload_from_string(response.content)
-
-    log = get_run_logger()
-    log.info(f"Loaded {response.url} to {blob.name}")
 
     return f"gs://{bucket}/{blob.name}"
 
