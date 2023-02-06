@@ -13,7 +13,7 @@ import pyarrow.parquet as pq
 # TODO(mrzzy): consolidate logging in @flow
 from datetime import date
 from enum import Enum
-from typing import List
+from typing import Any, Dict, List
 from google.cloud import bigquery
 from google.cloud.bigquery.job import LoadJobConfig, SourceFormat, WriteDisposition
 from google.cloud.bigquery.table import TableReference
@@ -56,28 +56,16 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
 
 
 @task(cache_key_fn=task_input_hash)
-def fix_taxi_type(gs_url: str, variant: TaxiVariant) -> str:
+def fix_taxi_type(gs_url: str, to_fix: Dict[str, Any]):
     """Fix type inconsistency on NYC Taxi partition.
 
     Args:
         gs_url: URL pointing to the NYC taxi partition to fix.
-        variant: Variant of the NYC Taxi dataset to fix.
+        to_fix: Map of column to PyArrow type to cast to.
     Returns:
         URL pointing at the rectified partition.
     """
     partition = pq.read_table(gs_url)
-
-    if variant == TaxiVariant.Yellow:
-        to_fix = {"airport_fee": pa.float32()}
-    elif variant == TaxiVariant.ForHire:
-        to_fix = {
-            "SR_Flag": pa.int8(),
-            "PUlocationID": pa.int64(),
-            "DOlocationID": pa.int64(),
-        }
-    else:
-        raise ValueError(f"Unsupported Taxi Variant: {variant.value}")
-
     # fix type inconsistencies
     for bad_column, cast_type in to_fix.items():
         schema = partition.schema
@@ -156,8 +144,21 @@ def ingest_taxi(
             Whether to truncate the table if it exists before writing.
     """
     gs_url = load_taxi_gcs(bucket, variant, partition)
-    if variant in [TaxiVariant.Yellow, TaxiVariant.ForHire]:
-        gs_url = fix_taxi_type(gs_url, variant)
+
+    # fix type inconsistencies
+    if variant == TaxiVariant.Yellow:
+        to_fix = {"airport_fee": pa.float32()}
+    elif variant == TaxiVariant.ForHire:
+        to_fix = {
+            "SR_Flag": pa.int8(),
+            "PUlocationID": pa.int64(),
+            "DOlocationID": pa.int64(),
+        }
+    elif variant == TaxiVariant.Green:
+        to_fix = {"ehail_fee": pa.float64()}
+    else:
+        raise ValueError(f"Unsupported Taxi Variant: {variant.value}")
+    gs_url = fix_taxi_type(gs_url, to_fix)
 
     load_parquet_bq(
         table_id=table_id,

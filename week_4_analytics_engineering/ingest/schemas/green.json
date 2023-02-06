@@ -1,13 +1,102 @@
-
-Welcome to BigQuery! This script will walk you through the 
-process of initializing your .bigqueryrc configuration file.
-
-First, we need to set up your credentials if they do not 
-already exist.
-
-Setting project_id mrzzy-sandbox as the default.
-
-BigQuery configuration complete! Type "bq" to get started.
-
-BigQuery error in show operation: Not found: Dataset mrzzy-sandbox:mrzzy-data-
-eng-zoomcamp.nytaxi
+[
+  {
+    "mode": "NULLABLE",
+    "name": "VendorID",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "lpep_pickup_datetime",
+    "type": "TIMESTAMP"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "lpep_dropoff_datetime",
+    "type": "TIMESTAMP"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "store_and_fwd_flag",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "RatecodeID",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "PULocationID",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "DOLocationID",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "passenger_count",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "trip_distance",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "fare_amount",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "extra",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "mta_tax",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "tip_amount",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "tolls_amount",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "ehail_fee",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "improvement_surcharge",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "total_amount",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "payment_type",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "trip_type",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "congestion_surcharge",
+    "type": "FLOAT"
+  }
+]
