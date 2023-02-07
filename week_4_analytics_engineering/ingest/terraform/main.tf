@@ -59,6 +59,13 @@ resource "google_container_cluster" "compute" {
   ip_allocation_policy {}
 }
 
+# Artifact Repository to store built containers
+resource "google_artifact_registry_repository" "docker" {
+  location      = local.region
+  repository_id = "docker"
+  format        = "DOCKER"
+}
+
 # IAM: Ingest Pipeline Service Account
 resource "google_service_account" "pipeline" {
   account_id  = "pipeline"
