@@ -38,6 +38,12 @@ resource "google_storage_bucket" "lake" {
   location = local.region
 }
 
+# GCS bucket for prefect storage
+resource "google_storage_bucket" "prefect" {
+  name     = "${local.project_id}-prefect"
+  location = local.region
+}
+
 # BigQuery dataset as data warehouse
 resource "google_bigquery_dataset" "warehouse" {
   dataset_id = "nytaxi"
