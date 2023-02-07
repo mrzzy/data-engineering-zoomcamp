@@ -57,13 +57,6 @@ resource "google_container_cluster" "compute" {
   enable_autopilot = true
   # needed as autopliot clusters are vpc VPC-native by default
   ip_allocation_policy {}
-
-  # assign service account to authenicate data processing workload
-  cluster_autoscaling {
-    auto_provisioning_defaults {
-      service_account = google_service_account.pipeline.email
-    }
-  }
 }
 
 # Artifact Repository to store built containers
@@ -94,5 +87,14 @@ resource "google_project_iam_binding" "warehouse" {
   role     = each.key
   members = [
     google_service_account.pipeline.member
+  ]
+}
+
+# allow 'pipeline' k8s service account to impersonate pipeline service account
+resource "google_service_account_iam_binding" "k8s_sa" {
+  service_account_id = google_service_account.pipeline.name
+  role               = "roles/iam.workloadIdentityUser"
+  members = [
+    "serviceAccount:${local.project_id}.svc.id.goog[default/pipeline]"
   ]
 }
