@@ -43,6 +43,21 @@ resource "google_bigquery_dataset" "warehouse" {
   dataset_id = "nytaxi"
   location   = local.region
 }
+# GKE cluster to provide compute for data processing
+resource "google_container_cluster" "compute" {
+  name             = "data-proc-compute"
+  description      = "Cluster providing compute for data processing"
+  location         = local.region
+  enable_autopilot = true
+  # needed as autopiliot clusters are vpc VPC-native by default
+  ip_allocation_policy {}
+
+  node_config {
+    spot            = true
+    disk_size_gb    = 20
+    service_account = google_service_account.pipeline.email
+  }
+}
 
 # IAM: Ingest Pipeline Service Account
 resource "google_service_account" "pipeline" {
