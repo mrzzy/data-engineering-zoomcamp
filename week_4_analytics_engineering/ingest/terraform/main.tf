@@ -57,6 +57,13 @@ resource "google_container_cluster" "compute" {
   enable_autopilot = true
   # needed as autopliot clusters are vpc VPC-native by default
   ip_allocation_policy {}
+
+  # assign service account to authenicate data processing workload
+  cluster_autoscaling {
+    auto_provisioning_defaults {
+      service_account = google_service_account.pipeline.email
+    }
+  }
 }
 
 # Artifact Repository to store built containers
