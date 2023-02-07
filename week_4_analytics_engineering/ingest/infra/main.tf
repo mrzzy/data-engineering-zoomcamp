@@ -55,14 +55,8 @@ resource "google_container_cluster" "compute" {
   description      = "Cluster providing compute for data processing"
   location         = local.region
   enable_autopilot = true
-  # needed as autopiliot clusters are vpc VPC-native by default
+  # needed as autopliot clusters are vpc VPC-native by default
   ip_allocation_policy {}
-
-  node_config {
-    spot            = true
-    disk_size_gb    = 20
-    service_account = google_service_account.pipeline.email
-  }
 }
 
 # IAM: Ingest Pipeline Service Account
