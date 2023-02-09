@@ -17,45 +17,39 @@ description: |-
           <PROJECT_ID>.<DATASET_ID>.<TABLE>
       partition:
           Date of partition to ingest. Since partitions are monthly sized,
-          the day of month is disregarded if passed.
-version: fa4b233d1d64b48d68b57bcfed24fb5c
+          the day of month & time component is disregarded if passed.
+version: e5d00a3c0f7259fbc3e9ff059faeeb53
 # The work queue that will handle this deployment's runs
 work_queue_name: default
-work_pool_name: default-agent-pool
-tags:
-- nytaxi
+work_pool_name: null
+tags: 
+  - nytaxi
 parameters:
   bucket: mrzzy-data-eng-zoomcamp-nytaxi
 schedule: null
-is_schedule_active: true
+is_schedule_active: null
 infra_overrides: {}
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command: null
+  stream_output: true
+  working_dir: null
+  block_type_slug: process
+  _block_type_slug: process
 
 ###
 ### DO NOT EDIT BELOW THIS LINE
 ###
 flow_name: ingest-taxi
 manifest_path: null
-infrastructure:
-  type: process
-  env: {}
-  labels: {}
-  name: null
-  command:
-  - python
-  - -m
-  - prefect.engine
-  stream_output: true
-  working_dir: null
-  _block_document_id: ef9b981f-0743-4179-a7b7-8f25d142cbc5
-  _block_document_name: anonymous-15c2c4f4-4f50-4a0f-b1e4-d01855222184
-  _is_anonymous: true
-  block_type_slug: process
-  _block_type_slug: process
 storage:
   bucket_path: mrzzy-data-eng-zoomcamp-prefect
-  service_account_info: '**********'
-  project: ''
-  _block_document_id: 665478a8-e871-4f84-83eb-4c54f6164b65
+  service_account_info: null
+  project: null
+  _block_document_id: d49ca555-6225-4dc6-8984-19c58f18678b
   _block_document_name: prefect-storage
   _is_anonymous: false
   block_type_slug: gcs
@@ -111,4 +105,4 @@ parameter_openapi_schema:
       - yellow
       - green
       - fhv
-timestamp: '2023-02-09T14:38:13.961313+00:00'
+timestamp: '2023-02-09T22:23:31.945353+00:00'

@@ -15,7 +15,7 @@ from prefect.tasks import task_input_hash
 from util import load_url_gcs
 
 
-@task(cache_key_fn=task_input_hash)
+@task
 def load_zone_gcs(bucket: str) -> str:
     """Load the Zone lookup table CSV into the given GCS Bucket.
 
@@ -33,7 +33,7 @@ def load_zone_gcs(bucket: str) -> str:
     )
 
 
-@task(cache_key_fn=task_input_hash)
+@task
 def load_csv_bq(table_id: str, csv_urls: List[str]):
     """Load the data on the CSV partitions stored on GCS to a BigQuery table.
 

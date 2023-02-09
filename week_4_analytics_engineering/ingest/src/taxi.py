@@ -28,7 +28,7 @@ class TaxiVariant(Enum):
     ForHire = "fhv"
 
 
-@task(cache_key_fn=task_input_hash)
+@task
 def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
     """Load a variant of of the NYC Taxi Dataset into the given GCS Bucket
 
@@ -54,7 +54,7 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
     )
 
 
-@task(cache_key_fn=task_input_hash)
+@task
 def fix_taxi_type(gs_url: str, to_fix: Dict[str, Any]):
     """Fix type inconsistency on NYC Taxi partition.
 
@@ -82,7 +82,7 @@ def fix_taxi_type(gs_url: str, to_fix: Dict[str, Any]):
     return fixed_gs_url
 
 
-@task(cache_key_fn=task_input_hash)
+@task
 def load_parquet_bq(table_id: str, partition_urls: List[str]):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
 
