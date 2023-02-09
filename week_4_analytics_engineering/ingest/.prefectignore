@@ -1,3 +1,7 @@
 venv/
 __pycache__/
 .prefect/
+Session.vim
+Dockerfile
+prefect/
+
