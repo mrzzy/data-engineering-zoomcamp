@@ -36,7 +36,7 @@ def load_taxi_gcs(bucket: str, variant: TaxiVariant, partition: date) -> str:
         bucket:
             Name of the GCS bucket to load the partition.
         variant:
-            Variant of the the NYC Taxi Dataset to laod.
+            Variant of the NYC Taxi Dataset to laod.
         date:
             Date specifying the month, year of the partition of the dataset to
             load. Ignores the day of month passed.
