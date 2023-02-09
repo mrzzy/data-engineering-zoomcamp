@@ -7,7 +7,7 @@ version: be64ece195a82cbdadd3289e7b98fef6
 # The work queue that will handle this deployment's runs
 work_queue_name: default
 work_pool_name: null
-tags: []
+tags: [nytaxi]
 parameters: {}
 schedule: null
 is_schedule_active: null
