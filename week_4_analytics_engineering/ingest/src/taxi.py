@@ -112,7 +112,6 @@ def ingest_taxi(
     bucket: str,
     table_id: str,
     partition: datetime,
-    truncate: bool,
 ):
     """Ingest the variant of the NYC Taxi dataset into the BQ Table with id.
 
@@ -129,8 +128,6 @@ def ingest_taxi(
         partition:
             Date of partition to ingest. Since partitions are monthly sized,
             the day of month & time component is disregarded if passed.
-        truncate:
-            Whether to truncate the table if it exists before writing.
     """
     log = get_run_logger()
     gs_url = load_taxi_gcs(bucket, variant, partition.date())
