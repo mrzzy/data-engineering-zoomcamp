@@ -20,14 +20,23 @@ description: |-
           the day of month is disregarded if passed.
       truncate:
           Whether to truncate the table if it exists before writing.
-version: 26c390f95092afbfc8a77f8b4a09c79b
+version: 1c2243361382ac0ebf0c9f9c464f9dfd
 # The work queue that will handle this deployment's runs
 work_queue_name: default
-tags: [nytaxi]
+work_pool_name: default-agent-pool
+tags:
+- nytaxi
 parameters:
   bucket: mrzzy-data-eng-zoomcamp-nytaxi
 schedule: null
+is_schedule_active: true
 infra_overrides: {}
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: ingest-taxi
+manifest_path: null
 infrastructure:
   type: process
   env: {}
@@ -38,13 +47,12 @@ infrastructure:
   - -m
   - prefect.engine
   stream_output: true
+  working_dir: null
+  _block_document_id: ef9b981f-0743-4179-a7b7-8f25d142cbc5
+  _block_document_name: anonymous-15c2c4f4-4f50-4a0f-b1e4-d01855222184
+  _is_anonymous: true
+  block_type_slug: process
   _block_type_slug: process
-
-###
-### DO NOT EDIT BELOW THIS LINE
-###
-flow_name: ingest-taxi
-manifest_path: null
 storage:
   bucket_path: mrzzy-data-eng-zoomcamp-prefect
   service_account_info: '**********'
@@ -52,6 +60,7 @@ storage:
   _block_document_id: 665478a8-e871-4f84-83eb-4c54f6164b65
   _block_document_name: prefect-storage
   _is_anonymous: false
+  block_type_slug: gcs
   _block_type_slug: gcs
 path: ''
 entrypoint: src/taxi.py:ingest_taxi
@@ -61,20 +70,42 @@ parameter_openapi_schema:
   properties:
     variant:
       title: variant
+      description: |2-
+
+        Variant of thne NYC Taxi dataset to ingest.
+      position: 0
       allOf:
       - $ref: '#/definitions/TaxiVariant'
     bucket:
       title: bucket
+      description: |2-
+
+        Name of the GCS Bucket used to stage ingested data.
+      position: 1
       type: string
     table_id:
       title: table_id
+      description: |2-
+
+        ID of the BigQuery table to ingesto data to, the format
+        <PROJECT_ID>.<DATASET_ID>.<TABLE>
+      position: 2
       type: string
     partition:
       title: partition
+      description: |2-
+
+        Date of partition to ingest. Since partitions are monthly sized,
+        the day of month & time component is disregarded if passed.
+      position: 3
       type: string
-      format: date
+      format: date-time
     truncate:
       title: truncate
+      description: |2-
+
+        Whether to truncate the table if it exists before writing.
+      position: 4
       type: boolean
   required:
   - variant
@@ -90,3 +121,4 @@ parameter_openapi_schema:
       - yellow
       - green
       - fhv
+timestamp: '2023-02-09T06:43:04.309938+00:00'

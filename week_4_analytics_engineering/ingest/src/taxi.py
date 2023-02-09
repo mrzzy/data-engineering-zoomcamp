@@ -10,7 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List
 from google.cloud import bigquery
@@ -119,7 +119,7 @@ def load_parquet_bq(
 
 @flow
 def ingest_taxi(
-    variant: TaxiVariant, bucket: str, table_id: str, partition: date, truncate: bool
+    variant: TaxiVariant, bucket: str, table_id: str, partition: datetime, truncate: bool
 ):
     """Ingest the variant of the NYC Taxi dataset into the BQ Table with id.
 
@@ -135,12 +135,12 @@ def ingest_taxi(
             <PROJECT_ID>.<DATASET_ID>.<TABLE>
         partition:
             Date of partition to ingest. Since partitions are monthly sized,
-            the day of month is disregarded if passed.
+            the day of month & time component is disregarded if passed.
         truncate:
             Whether to truncate the table if it exists before writing.
     """
     log = get_run_logger()
-    gs_url = load_taxi_gcs(bucket, variant, partition)
+    gs_url = load_taxi_gcs(bucket, variant, partition.date())
 
     # fix type inconsistencies
     if variant == TaxiVariant.Yellow:
