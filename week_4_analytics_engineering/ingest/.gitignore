@@ -2,3 +2,4 @@
 venv/
 # prefect files
 .prefect/
+Session.vim

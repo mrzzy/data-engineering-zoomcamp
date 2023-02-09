@@ -1,26 +1,19 @@
 ###
-### A complete description of a Prefect Deployment for flow 'ingest-taxi'
+### A complete description of a Prefect Deployment for flow 'ingest-zone'
 ###
-name: ingest_taxi
+name: ingest_zone
 description: |-
-  Ingest the variant of the NYC Taxi dataset into the BQ Table with id.
+  Ingest the Zone Lookup table of the NYC Taxi dataset into the BQ table with id.
 
-  Stages partition data in a GCS Bucket before ingesting into BigQuery.
+  Stages CSV data in a GCS Bucket before ingesting into BigQuery.
 
   Args:
-      variant:
-          Variant of thne NYC Taxi dataset to ingest.
       bucket:
           Name of the GCS Bucket used to stage ingested data.
       table_id:
           ID of the BigQuery table to ingesto data to, the format
           <PROJECT_ID>.<DATASET_ID>.<TABLE>
-      partition:
-          Date of partition to ingest. Since partitions are monthly sized,
-          the day of month is disregarded if passed.
-      truncate:
-          Whether to truncate the table if it exists before writing.
-version: 26c390f95092afbfc8a77f8b4a09c79b
+version: d96db7ffadeb5801c46274f7de24a702
 # The work queue that will handle this deployment's runs
 work_queue_name: default
 tags: [nytaxi]
@@ -43,7 +36,7 @@ infrastructure:
 ###
 ### DO NOT EDIT BELOW THIS LINE
 ###
-flow_name: ingest-taxi
+flow_name: ingest-zone
 manifest_path: null
 storage:
   bucket_path: mrzzy-data-eng-zoomcamp-prefect
@@ -54,39 +47,18 @@ storage:
   _is_anonymous: false
   _block_type_slug: gcs
 path: ''
-entrypoint: src/taxi.py:ingest_taxi
+entrypoint: src/zone.py:ingest_zone
 parameter_openapi_schema:
   title: Parameters
   type: object
   properties:
-    variant:
-      title: variant
-      allOf:
-      - $ref: '#/definitions/TaxiVariant'
     bucket:
       title: bucket
       type: string
     table_id:
       title: table_id
       type: string
-    partition:
-      title: partition
-      type: string
-      format: date
-    truncate:
-      title: truncate
-      type: boolean
   required:
-  - variant
   - bucket
   - table_id
-  - partition
-  - truncate
-  definitions:
-    TaxiVariant:
-      title: TaxiVariant
-      description: An enumeration.
-      enum:
-      - yellow
-      - green
-      - fhv
+  definitions: null
