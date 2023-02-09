@@ -21,7 +21,7 @@ agent:
   # system resource requests
   resources:
     requests:
-      memory: 1.8Gi
+      memory: 3Gi
       cpu: 500m
 # pipeline k8s service account allowed to impersonate pipeline gcp service account
 # for IAM permissions.
