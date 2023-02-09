@@ -14,12 +14,17 @@ agent:
     # -- prefect API url (PREFECT_API_URL); should be in-cluster URL if the agent is deployed in the same cluster as the API
     apiUrl: http://warp.mrzzy.co:8000/api
   # run 6 prefect agents
-  replicaCount: 6
+  replicaCount: 1
   # use spot k8s nodes to lower cost
   nodeSelector:
     cloud.google.com/gke-spot: "true"
   # system resource requests
   resources:
     requests:
-      memory: 0.5Gi
+      memory: 1.5Gi
       cpu: 500m
+# pipeline k8s service account allowed to impersonate pipeline gcp service account
+# for IAM permissions.
+serviceAccount:
+  create: false
+  name: pipeline
