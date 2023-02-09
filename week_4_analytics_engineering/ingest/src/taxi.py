@@ -83,9 +83,7 @@ def fix_taxi_type(gs_url: str, to_fix: Dict[str, Any]):
 
 
 @task(cache_key_fn=task_input_hash)
-def load_parquet_bq(
-    table_id: str, partition_urls: List[str], schema_json: str, truncate: bool = False
-):
+def load_parquet_bq(table_id: str, partition_urls: List[str]):
     """Load the data on the Parquet partitions stored on GCS to a BigQuery table.
 
     Args:
@@ -94,10 +92,6 @@ def load_parquet_bq(
             <PROJECT_ID>.<DATASET_ID>.<TABLE>
         partition_urls:
             List of GCS URLs referencing Parquet partitions on GCS to load.
-        schema_json
-            Path to a JSON schema file used to define the schema of the loaded table
-        truncate:
-            Whether to truncate the table if it exists before writing.
     """
     bq = bigquery.Client()
 
@@ -107,19 +101,18 @@ def load_parquet_bq(
         destination=TableReference.from_string(table_id),
         job_config=LoadJobConfig(
             source_format=SourceFormat.PARQUET,
-            schema=bq.schema_from_json(schema_json),
-            write_disposition=(
-                WriteDisposition.WRITE_APPEND
-                if truncate
-                else WriteDisposition.WRITE_APPEND
-            ),
+            write_disposition=WriteDisposition.WRITE_APPEND,
         ),
     ).result()
 
 
 @flow
 def ingest_taxi(
-    variant: TaxiVariant, bucket: str, table_id: str, partition: datetime, truncate: bool
+    variant: TaxiVariant,
+    bucket: str,
+    table_id: str,
+    partition: datetime,
+    truncate: bool,
 ):
     """Ingest the variant of the NYC Taxi dataset into the BQ Table with id.
 
@@ -161,9 +154,5 @@ def ingest_taxi(
     load_parquet_bq(
         table_id=table_id,
         partition_urls=[gs_url],
-        schema_json=path.join(
-            path.dirname(__file__), "schemas", f"{variant.value}.json"
-        ),
-        truncate=truncate,
     )
     log.info(f"Loaded {variant.value} - {partition:%Y-%m} partition into BigQuery")

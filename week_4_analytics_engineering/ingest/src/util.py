@@ -6,8 +6,10 @@
 
 from datetime import date
 from typing import List
+from google.cloud.bigquery.table import Table, TableReference
+from prefect.tasks import task
 import requests
-from google.cloud import storage
+from google.cloud import bigquery, storage
 
 
 def load_url_gcs(url: str, bucket: str, path: str) -> str:
@@ -56,3 +58,21 @@ def monthly_range(begin: date, end: date) -> List[date]:
         )
         for i in range(n_months)
     ]
+
+
+@task
+def apply_bq_table(table_id: str, schema_path: str):
+    """Apply the given schema to the BQ table with the given ID.
+
+    Warning: Drops any existing table if one with the given table_id exists.
+
+    Args:
+        table_id:
+            ID of the BigQuery table to ingest data to, the format
+            <PROJECT_ID>.<DATASET_ID>.<TABLE>
+        schema_path:
+            Path to JSON schema file used to create the table.
+    """
+    bq, table_ref = bigquery.Client(), TableReference.from_string(table_id)
+    bq.delete_table(table_ref, not_found_ok=True)
+    bq.create_table(Table(table_ref, schema=bq.schema_from_json(schema_path)))
