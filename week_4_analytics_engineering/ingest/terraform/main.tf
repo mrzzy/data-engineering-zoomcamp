@@ -41,14 +41,20 @@ resource "google_storage_bucket" "lake" {
 # GCS bucket for prefect storage
 resource "google_storage_bucket" "prefect" {
   name     = "${local.project_id}-prefect"
-  location = local.region
+  location = "US"
 }
 
 # BigQuery dataset as data warehouse
-resource "google_bigquery_dataset" "warehouse" {
+resource "google_bigquery_dataset" "warehouse_dev" {
   dataset_id = "nytaxi"
   location   = local.region
 }
+
+resource "google_bigquery_dataset" "warehouse_prod" {
+  dataset_id = "nytaxi_prod"
+  location   = local.region
+}
+
 # GKE cluster to provide compute for data processing
 resource "google_container_cluster" "compute" {
   name             = "data-proc-compute"
