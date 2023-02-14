@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipeline
+  namespace: default
+  annotations:
+    # impersonate gcp service account
+    iam.gke.io/gcp-service-account: pipeline@mrzzy-data-eng-zoomcamp.iam.gserviceaccount.com

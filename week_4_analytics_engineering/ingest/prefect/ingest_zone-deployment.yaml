@@ -1,0 +1,77 @@
+###
+### A complete description of a Prefect Deployment for flow 'ingest-zone'
+###
+name: ingest_zone
+description: |-
+  Ingest the Zone Lookup table of the NYC Taxi dataset into the BQ table with id.
+
+  Stages CSV data in a GCS Bucket before ingesting into BigQuery.
+
+  Args:
+      bucket:
+          Name of the GCS Bucket used to stage ingested data.
+      table_id:
+          ID of the BigQuery table to ingesto data to, the format
+          <PROJECT_ID>.<DATASET_ID>.<TABLE>
+version: 869a30574072c09696fe9b6fa7f07d40
+# The work queue that will handle this deployment's runs
+work_queue_name: default
+work_pool_name: null
+tags: 
+  - nytaxi
+parameters:
+  bucket: mrzzy-data-eng-zoomcamp-nytaxi
+schedule: null
+is_schedule_active: null
+infra_overrides: {}
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command: null
+  stream_output: true
+  working_dir: null
+  block_type_slug: process
+  _block_type_slug: process
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: ingest-zone
+manifest_path: null
+storage:
+  bucket_path: mrzzy-data-eng-zoomcamp-prefect
+  service_account_info: null
+  project: null
+  _block_document_id: d49ca555-6225-4dc6-8984-19c58f18678b
+  _block_document_name: prefect-storage
+  _is_anonymous: false
+  block_type_slug: gcs
+  _block_type_slug: gcs
+path: ''
+entrypoint: src/zone.py:ingest_zone
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    bucket:
+      title: bucket
+      description: |2-
+
+        Name of the GCS Bucket used to stage ingested data.
+      position: 0
+      type: string
+    table_id:
+      title: table_id
+      description: |2-
+
+        ID of the BigQuery table to ingesto data to, the format
+        <PROJECT_ID>.<DATASET_ID>.<TABLE>
+      position: 1
+      type: string
+  required:
+  - bucket
+  - table_id
+  definitions: null
+timestamp: '2023-02-09T22:24:27.752094+00:00'

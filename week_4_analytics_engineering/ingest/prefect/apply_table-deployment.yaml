@@ -1,0 +1,48 @@
+###
+### A complete description of a Prefect Deployment for flow 'apply-table'
+###
+name: apply_table
+description: Create or Replace BQ tables for ingesting NYC Taxi data.
+version: be64ece195a82cbdadd3289e7b98fef6
+# The work queue that will handle this deployment's runs
+work_queue_name: default
+work_pool_name: null
+tags: [nytaxi]
+parameters: {}
+schedule: null
+is_schedule_active: null
+infra_overrides: {}
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command: null
+  stream_output: true
+  working_dir: null
+  block_type_slug: process
+  _block_type_slug: process
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: apply-table
+manifest_path: null
+storage:
+  bucket_path: mrzzy-data-eng-zoomcamp-prefect
+  service_account_info: '**********'
+  project: ''
+  _block_document_id: 665478a8-e871-4f84-83eb-4c54f6164b65
+  _block_document_name: prefect-storage
+  _is_anonymous: false
+  block_type_slug: gcs
+  _block_type_slug: gcs
+path: ''
+entrypoint: src/tables.py:apply_table
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties: {}
+  required: null
+  definitions: null
+timestamp: '2023-02-09T08:17:36.401835+00:00'

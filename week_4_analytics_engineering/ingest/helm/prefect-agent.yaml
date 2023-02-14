@@ -1,0 +1,30 @@
+#
+# Data Engineering Zoomcamp
+# Prefect Agent Helm CHartValues
+#
+
+agent:
+  apiConfig: "orion"
+  # custom docker image bundles's NYC Taxi data pipeline's dependencies
+  image:
+    repository: us-west1-docker.pkg.dev/mrzzy-data-eng-zoomcamp/docker/prefect-nytaxi
+    prefectTag: "latest"
+    pullPolicy: Always
+  orionApiConfig:
+    # -- prefect API url (PREFECT_API_URL); should be in-cluster URL if the agent is deployed in the same cluster as the API
+    apiUrl: http://warp.mrzzy.co:8000/api
+  # run 8 prefect agents
+  replicaCount: 8
+  # use spot k8s nodes to lower cost
+  nodeSelector:
+    cloud.google.com/gke-spot: "true"
+  # system resource requests
+  resources:
+    requests:
+      memory: 3Gi
+      cpu: 500m
+# pipeline k8s service account allowed to impersonate pipeline gcp service account
+# for IAM permissions.
+serviceAccount:
+  create: false
+  name: pipeline
