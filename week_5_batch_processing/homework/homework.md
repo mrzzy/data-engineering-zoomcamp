@@ -7,12 +7,15 @@ We'll use high volume for-hire vehicles (HVFHV) dataset for that.
 
 ## Question 1. Install Spark and PySpark
 
+
+We'll use high volume for-hire vehcnilces
 * Install Spark
 * Run PySpark
 * Create a local spark session 
 * Execute `spark.version`
 
 What's the output?
+**3.3.1**
 
 
 ## Question 2. HVFHW February 2021
@@ -20,12 +23,15 @@ What's the output?
 Download the HVFHV data for february 2021:
 
 ```bash
-wget https://nyc-tlc.s3.amazonaws.com/trip+data/fhvhv_tripdata_2021-02.csv
+wget https://github.com/DataTalksClub/nyc-tlc-data/releases/download/fhvhv/fhvhv_tripdata_2021-06.csv.gz
 ```
 
 Read it with Spark using the same schema as we did 
 in the lessons. We will use this dataset for all
 the remaining questions.
+p
+
+
 
 Repartition it to 24 partitions and save it to
 parquet.
