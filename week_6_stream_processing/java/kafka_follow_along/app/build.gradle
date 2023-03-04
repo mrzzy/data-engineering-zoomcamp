@@ -22,12 +22,12 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
 
     // This dependency is used by the application.
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'org.apache.kafka:kafka-clients:3.4.0'
 }
 
 application {
     // Define the main class for the application.
-    mainClass = 'kafka_follow_along.App'
+    mainClass = 'kafka_follow_along.JSONProducer'
 }
 
 tasks.named('test') {
