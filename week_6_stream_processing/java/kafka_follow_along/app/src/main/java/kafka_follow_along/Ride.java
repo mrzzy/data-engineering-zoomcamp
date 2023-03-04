@@ -1,9 +1,9 @@
 /*
-* data-engineering-zoomcamp
-* Week 6
-* Kafka Follow Along
-* Ride Model
-*/
+ * data-engineering-zoomcamp
+ * Week 6
+ * Kafka Follow Along
+ * Ride Model
+ */
 
 package kafka_follow_along;
 
@@ -49,5 +49,4 @@ public record Ride(
                 Double.parseDouble(tokens[16]),
                 Double.parseDouble(tokens[17]));
     }
-
 }

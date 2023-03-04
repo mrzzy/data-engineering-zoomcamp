@@ -18,10 +18,10 @@ public class JSONProducer {
     public List<Ride> getRides() throws URISyntaxException {
         URL ridesURL = getClass().getResource("rides.csv");
         // rides url is null if getResource() is unable to find it
-        if(ridesURL == null) {
+        if (ridesURL == null) {
             throw new RuntimeException("Unable to load rides.csv as a resource.");
         }
-    
+
         // parse rides csv as a list of taxi rides
         try {
             return Files.lines(Path.of(ridesURL.toURI()))
@@ -35,6 +35,5 @@ public class JSONProducer {
         }
     }
 
-    public static void main(String[] args) {
-    }
+    public static void main(String[] args) {}
 }
