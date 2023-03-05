@@ -40,6 +40,17 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+
+tasks.register('runProducer', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kafka_follow_along.JSONProducer'
+}
+
+tasks.register('runConsumer', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kafka_follow_along.JSONConsumer'
+}
+
 spotless {
     java {
         googleJavaFormat('1.15.0').aosp().reflowLongStrings()

@@ -1,20 +1,23 @@
 /*
-* data-engineering-zoomcamp
-* Week 6
-* Kafka Follow Along - KafkaProperties Loader
-*/
+ * data-engineering-zoomcamp
+ * Week 6
+ * Kafka Follow Along - KafkaProperties Loader
+ */
 
 package kafka_follow_along;
 
 import java.io.IOException;
 import java.util.Properties;
 
-public class KafkaProperties  {
+public class KafkaProperties {
     public static Properties load() {
         // load default properties from kafka properties file
         Properties properties = new Properties();
         try {
-            properties.load(KafkaProperties.class.getClassLoader().getResourceAsStream("kafka.properties"));
+            properties.load(
+                    KafkaProperties.class
+                            .getClassLoader()
+                            .getResourceAsStream("kafka_follow_along/kafka.properties"));
         } catch (IOException e) {
             throw new RuntimeException("Failed to load defaults from kafka.properties: ", e);
         }

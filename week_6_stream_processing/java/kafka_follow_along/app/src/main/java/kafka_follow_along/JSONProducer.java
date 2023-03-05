@@ -45,7 +45,7 @@ public class JSONProducer {
             Ride ride = rides.get(i - 1);
             producer.send(
                     new ProducerRecord<String, Ride>(
-                            properties.getProperty("kafka.producer.topic"),
+                            properties.getProperty("dezoomcamp.kafka.topic"),
                             String.valueOf(ride.PULocationID()),
                             ride));
             System.out.println(String.format("Producing: %d/%d", i, rides.size()));
@@ -57,5 +57,4 @@ public class JSONProducer {
         JSONProducer producer = new JSONProducer();
         producer.publishRides(producer.getRides());
     }
-    
 }
