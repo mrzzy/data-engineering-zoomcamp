@@ -38,7 +38,7 @@ public class JSONProducer {
     }
 
     public void publishRides(List<Ride> rides) {
-        Properties properties = loadProperties();
+        Properties properties = KafkaProperties.load();
         KafkaProducer<String, Ride> producer = new KafkaProducer<>(properties);
         // send ridges to kafka topic, keyed by pick up loacation (id)
         for (int i = 1; i <= rides.size(); i++) {
@@ -57,30 +57,5 @@ public class JSONProducer {
         JSONProducer producer = new JSONProducer();
         producer.publishRides(producer.getRides());
     }
-
-    private Properties loadProperties() {
-        // load default properties from kafka properties file
-        Properties properties = new Properties();
-        try {
-            properties.load(getClass().getResourceAsStream("kafka.properties"));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load defaults from kafka.properties: ", e);
-        }
-        // apply credentials from process environment into Properties
-        properties.setProperty(
-                "sasl.jaas.config",
-                String.format(
-                        "org.apache.kafka.common.security.plain.PlainLoginModule"
-                                + " required username='%s' password='%s';",
-                        getEnv("CLUSTER_API_KEY"), getEnv("CLUSTER_API_SECRET")));
-        return properties;
-    }
-
-    private static String getEnv(String key) {
-        String value = System.getenv(key);
-        if (value == null) {
-            throw new RuntimeException(String.format("Expected environment variable: %s", key));
-        }
-        return value;
-    }
+    
 }
