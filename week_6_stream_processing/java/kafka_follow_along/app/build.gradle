@@ -27,6 +27,7 @@ dependencies {
 
     // This dependency is used by the application.
     implementation 'org.apache.kafka:kafka-clients:3.4.0'
+    implementation 'org.apache.kafka:kafka-streams:3.4.0'
     implementation 'io.confluent:kafka-json-serializer:7.3.2'
 }
 
@@ -49,6 +50,11 @@ tasks.register('runProducer', JavaExec) {
 tasks.register('runConsumer', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'kafka_follow_along.JSONConsumer'
+}
+
+tasks.register('runKStream', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kafka_follow_along.JSONKStream'
 }
 
 spotless {
