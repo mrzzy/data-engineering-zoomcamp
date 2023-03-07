@@ -57,6 +57,11 @@ tasks.register('runKStream', JavaExec) {
     mainClass = 'kafka_follow_along.JSONKStream'
 }
 
+tasks.register('runJoin', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kafka_follow_along.JSONKStreamsJoin'
+}
+
 spotless {
     java {
         googleJavaFormat('1.15.0').aosp().reflowLongStrings()
