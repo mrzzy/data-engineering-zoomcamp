@@ -20,7 +20,7 @@ public class JSONConsumer {
     JSONConsumer() {
         Properties properties = KafkaProperties.load();
         consumer = new KafkaConsumer<>(properties);
-        consumer.subscribe(List.of(properties.getProperty("dezoomcamp.kafka.topic")));
+        consumer.subscribe(List.of(properties.getProperty("dezoomcamp.kafka.topic.rides")));
     }
 
     public void consumeRides() {

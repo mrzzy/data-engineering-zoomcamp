@@ -20,9 +20,9 @@ public class JSONKStreamsJoin {
         JSONKStreamsJoin join = new JSONKStreamsJoin();
         Properties properties = KafkaProperties.load();
         KafkaStreams kafkaStreams = new KafkaStreams(join.build(
-                properties.getProperty("dezoomcamp.kafka.join.rides-topic"),
-                properties.getProperty("dezoomcamp.kafka.join.location-topic"),
-                properties.getProperty("dezoomcamp.kafka.join.out-topic")),
+                properties.getProperty("dezoomcamp.kafka.topic.rides"),
+                properties.getProperty("dezoomcamp.kafka.topic.location"),
+                properties.getProperty("dezoomcamp.kafka.topic.out")),
                 properties);
         kafkaStreams.start();
 
