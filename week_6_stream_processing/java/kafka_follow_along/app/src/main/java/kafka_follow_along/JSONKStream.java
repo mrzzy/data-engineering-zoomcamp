@@ -35,7 +35,7 @@ public class JSONKStream {
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, Ride> stream =
                 builder.stream(
-                        properties.getProperty("dezoomcamp.kafka.topic"),
+                        properties.getProperty("dezoomcamp.kafka.topic.rides"),
                         Consumed.with(Serdes.String(), getJsonSerde()));
 
         // create a count cdc stream
@@ -45,7 +45,7 @@ public class JSONKStream {
                         .toStream(); // emit changes maded to the count table as stream
         // write count stream to topic
         countStream.to(
-                properties.getProperty("dezoomcamp.kafka.count.topic"),
+                properties.getProperty("dezoomcamp.kafka.topic.ride-counts"),
                 Produced.with(Serdes.String(), Serdes.Long()));
 
         return builder.build();
