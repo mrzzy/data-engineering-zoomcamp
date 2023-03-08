@@ -6,11 +6,7 @@
 
 package kafka_follow_along;
 
-import io.confluent.kafka.serializers.KafkaJsonDeserializer;
-import io.confluent.kafka.serializers.KafkaJsonSerializer;
-import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -21,22 +17,13 @@ import org.apache.kafka.streams.kstream.Produced;
 
 /** JSONKStream */
 public class JSONKStream {
-    private Serde<Ride> getJsonSerde() {
-        Serde<Ride> serde =
-                Serdes.serdeFrom(new KafkaJsonSerializer<>(), new KafkaJsonDeserializer<>());
-        // configure deserialiser to encode/decode to Rides class instead of generic
-        // HashMap
-        serde.configure(Map.of("json.value.type", Ride.class.getName()), false);
-        return serde;
-    }
-
     public Topology countPickupLocations(Properties properties) {
         // build a topology / dag
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, Ride> stream =
                 builder.stream(
                         properties.getProperty("dezoomcamp.kafka.topic.rides"),
-                        Consumed.with(Serdes.String(), getJsonSerde()));
+                        Consumed.with(Serdes.String(), JSONSerde.build(Ride.class)));
 
         // create a count cdc stream
         KStream<String, Long> countStream =

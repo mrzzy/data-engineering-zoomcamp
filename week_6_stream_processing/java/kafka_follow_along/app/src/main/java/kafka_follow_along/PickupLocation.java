@@ -8,4 +8,4 @@ package kafka_follow_along;
 
 import java.time.LocalDateTime;
 
-public record PickupLocation(long locationID, LocalDateTime atTimestamp) {}
+public record PickupLocation(long locationID, LocalDateTime pickupAt) {}
