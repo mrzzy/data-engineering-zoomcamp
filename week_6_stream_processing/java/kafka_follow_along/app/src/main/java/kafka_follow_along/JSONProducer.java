@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
@@ -76,6 +77,12 @@ public class JSONProducer<T> {
             zoneProducer.publish(
                     zoneProducer.getRecords("zones.csv", Zone::parseTokens),
                     zone -> String.valueOf(zone.locationID()));
+        } else if (args[0].equals("zones")) {
+            JSONProducer<PickupLocation> puLocationProducer = new JSONProducer<>(
+                    properties, properties.getProperty("dezoomcamp.kafka.topic.locations"));
+            puLocationProducer.publish(
+                    List.of(new PickupLocation(1212L, LocalDateTime.now())),
+                    location -> String.valueOf(location.locationID()));
         } else {
             throw new IllegalArgumentException("Unsupported message type: " + args[0]);
         }
