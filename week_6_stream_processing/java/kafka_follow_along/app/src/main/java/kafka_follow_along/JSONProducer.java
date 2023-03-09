@@ -28,11 +28,10 @@ public class JSONProducer<T> {
         this.producer = new KafkaProducer<>(kafkaProperties);
     }
 
-    public List<T> getRecords(String resource, Function<String[], T> parseTokens) {
-        URL csvURL = getClass().getResource(resource);
+    public static <R> List<R> getRecords(URL csvURL, Function<String[], R> parseTokens) {
         // rides url is null if getResource() is unable to find it
         if (csvURL == null) {
-            throw new RuntimeException(String.format("Unable to load %s as a resource.", resource));
+            throw new RuntimeException(String.format("Unable to load %s as a resource.", csvURL));
         }
 
         // parse rides csv as a list of taxi rides
@@ -64,25 +63,24 @@ public class JSONProducer<T> {
 
         System.out.println(args[0]);
         if (args[0].equals("rides")) {
+            URL ridesCSVURL = JSONProducer.class.getResource("rides.csv");
             // producer rides
-            JSONProducer<Ride> rideProducer =
-                    new JSONProducer<>(
-                            properties, properties.getProperty("dezoomcamp.kafka.topic.rides"));
+            JSONProducer<Ride> rideProducer = new JSONProducer<>(
+                    properties, properties.getProperty("dezoomcamp.kafka.topic.rides"));
             rideProducer.publish(
-                    rideProducer.getRecords("rides.csv", Ride::parseTokens),
+                    JSONProducer.getRecords(ridesCSVURL, Ride::parseTokens),
                     ride -> String.valueOf(ride.PULocationID()));
         } else if (args[0].equals("zones")) {
             // producer zones
-            JSONProducer<Zone> zoneProducer =
-                    new JSONProducer<>(
-                            properties, properties.getProperty("dezoomcamp.kafka.topic.zones"));
+            URL zonesCSVURL = JSONProducer.class.getResource("zones.csv");
+            JSONProducer<Zone> zoneProducer = new JSONProducer<>(
+                    properties, properties.getProperty("dezoomcamp.kafka.topic.zones"));
             zoneProducer.publish(
-                    zoneProducer.getRecords("zones.csv", Zone::parseTokens),
+                    JSONProducer.getRecords(zonesCSVURL, Zone::parseTokens),
                     zone -> String.valueOf(zone.locationID()));
         } else if (args[0].equals("locations")) {
-            JSONProducer<PickupLocation> puLocationProducer =
-                    new JSONProducer<>(
-                            properties, properties.getProperty("dezoomcamp.kafka.topic.locations"));
+            JSONProducer<PickupLocation> puLocationProducer = new JSONProducer<>(
+                    properties, properties.getProperty("dezoomcamp.kafka.topic.locations"));
             puLocationProducer.publish(
                     List.of(new PickupLocation(186L, LocalDateTime.parse("2020-07-01T01:05:46"))),
                     location -> String.valueOf(location.locationID()));

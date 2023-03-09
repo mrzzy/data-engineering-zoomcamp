@@ -10,16 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 public class JSONProducerTest {
-    private final Properties properties = KafkaProperties.load();
-
     @Test
     public void testGetRideRecords() throws Exception {
-        final JSONProducer<Ride> ridesProducer = new JSONProducer<>(properties, "test");
-        List<Ride> rides = ridesProducer.getRecords("rides.csv", Ride::parseTokens);
+        List<Ride> rides = JSONProducer.getRecords(getClass().getResource("rides.csv"), Ride::parseTokens);
         assertEquals(rides.size(), 266);
         assertEquals(rides.get(0).vendorID(), 1);
         assertEquals(rides.get(0).tpepPickupDatetime(), LocalDateTime.parse("2020-07-01T00:25:32"));
@@ -44,8 +40,7 @@ public class JSONProducerTest {
 
     @Test
     public void testGetZoneRecords() throws Exception {
-        final JSONProducer<Zone> zonesProducer = new JSONProducer<>(properties, "test");
-        List<Zone> zones = zonesProducer.getRecords("zones.csv", Zone::parseTokens);
+        List<Zone> zones = JSONProducer.getRecords(getClass().getResource("zones.csv"), Zone::parseTokens);
         assertEquals(zones.size(), 265);
         assertEquals(zones.get(0).locationID(), 1);
         assertEquals(zones.get(0).borugh(), "EWR");
