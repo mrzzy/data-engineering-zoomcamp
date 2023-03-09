@@ -45,6 +45,6 @@ public class Records {
     }
 
     public static List<PickupLocation> locations() {
-        return List.of(new PickupLocation(186L, LocalDateTime.parse("2020-07-01T01:05:46")));
+        return List.of(new PickupLocation(186L, LocalDateTime.parse("2020-07-01T00:15:00")));
     }
 }

@@ -22,7 +22,7 @@ import org.apache.kafka.streams.kstream.StreamJoined;
 import org.apache.kafka.streams.kstream.ValueJoiner;
 
 public class JSONKStreamsJoin {
-    public Topology build(String inRidesTopic, String inLocationsTopic, String outTopic) {
+    public static Topology build(String inRidesTopic, String inLocationsTopic, String outTopic) {
         StreamsBuilder builder = new StreamsBuilder();
         // read rides & PickupLocation updates from streams
         KStream<String, Ride> rideByDropoff =
@@ -75,11 +75,10 @@ public class JSONKStreamsJoin {
 
     public static void main(String[] args) throws InterruptedException {
         // build kafka streams application
-        JSONKStreamsJoin join = new JSONKStreamsJoin();
         Properties properties = KafkaProperties.load();
         KafkaStreams kafkaStreams =
                 new KafkaStreams(
-                        join.build(
+                        JSONKStreamsJoin.build(
                                 properties.getProperty("dezoomcamp.kafka.topic.rides"),
                                 properties.getProperty("dezoomcamp.kafka.topic.locations"),
                                 properties.getProperty("dezoomcamp.kafka.topic.rides-zones")),
