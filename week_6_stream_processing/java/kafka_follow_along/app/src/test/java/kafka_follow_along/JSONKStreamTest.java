@@ -29,17 +29,19 @@ public class JSONKStreamTest {
     @BeforeEach
     public void setup() {
         Properties properties = KafkaProperties.load();
-        driver = new TopologyTestDriver(JSONKStream.countPickupLocations(properties), properties);
+        String inRides = properties.getProperty("dezoomcamp.kafka.topic.rides");
+        String outCounts = properties.getProperty("dezoomcamp.kafka.topic.ride-counts");
+        driver =
+                new TopologyTestDriver(
+                        JSONKStream.countPickupLocations(inRides, outCounts), properties);
         inTopic =
                 driver.createInputTopic(
-                        properties.getProperty("dezoomcamp.kafka.topic.rides"),
+                        inRides,
                         Serdes.String().serializer(),
                         JSONSerde.build(Ride.class).serializer());
         outTopic =
                 driver.createOutputTopic(
-                        properties.getProperty("dezoomcamp.kafka.topic.ride-counts"),
-                        Serdes.String().deserializer(),
-                        Serdes.Long().deserializer());
+                        outCounts, Serdes.String().deserializer(), Serdes.Long().deserializer());
     }
 
     @Test
