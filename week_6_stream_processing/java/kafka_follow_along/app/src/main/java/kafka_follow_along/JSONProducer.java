@@ -38,20 +38,22 @@ public class JSONProducer<T> {
         System.out.println(args[0]);
         if (args[0].equals("rides")) {
             // producer rides
-            JSONProducer<Ride> rideProducer = new JSONProducer<>(
-                    properties, properties.getProperty("dezoomcamp.kafka.topic.rides"));
+            JSONProducer<Ride> rideProducer =
+                    new JSONProducer<>(
+                            properties, properties.getProperty("dezoomcamp.kafka.topic.rides"));
             rideProducer.publish(Records.rides(), ride -> String.valueOf(ride.PULocationID()));
         } else if (args[0].equals("zones")) {
             // producer zones
-            JSONProducer<Zone> zoneProducer = new JSONProducer<>(
-                    properties, properties.getProperty("dezoomcamp.kafka.topic.zones"));
+            JSONProducer<Zone> zoneProducer =
+                    new JSONProducer<>(
+                            properties, properties.getProperty("dezoomcamp.kafka.topic.zones"));
             zoneProducer.publish(Records.zones(), zone -> String.valueOf(zone.locationID()));
         } else if (args[0].equals("locations")) {
-            JSONProducer<PickupLocation> puLocationProducer = new JSONProducer<>(
-                    properties, properties.getProperty("dezoomcamp.kafka.topic.locations"));
+            JSONProducer<PickupLocation> puLocationProducer =
+                    new JSONProducer<>(
+                            properties, properties.getProperty("dezoomcamp.kafka.topic.locations"));
             puLocationProducer.publish(
-                    Records.locations(),
-                    location -> String.valueOf(location.locationID()));
+                    Records.locations(), location -> String.valueOf(location.locationID()));
         } else {
             throw new IllegalArgumentException("Unsupported message type: " + args[0]);
         }

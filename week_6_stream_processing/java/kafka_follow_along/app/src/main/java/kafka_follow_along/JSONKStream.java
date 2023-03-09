@@ -1,7 +1,7 @@
 /*
  * data-engineering-zoomcamp
  * Week 6
- * Kafka Follow Along - JSONConsumer
+ * Kafka Follow Along - JSONKStream
  */
 
 package kafka_follow_along;
@@ -17,7 +17,7 @@ import org.apache.kafka.streams.kstream.Produced;
 
 /** JSONKStream */
 public class JSONKStream {
-    public Topology countPickupLocations(Properties properties) {
+    public static Topology countPickupLocations(Properties properties) {
         // build a topology / dag
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, Ride> stream =
@@ -39,10 +39,9 @@ public class JSONKStream {
     }
 
     public static void main(String[] args) {
-        JSONKStream stream = new JSONKStream();
         Properties properties = KafkaProperties.load();
         KafkaStreams kafkaStreams =
-                new KafkaStreams(stream.countPickupLocations(properties), properties);
+                new KafkaStreams(JSONKStream.countPickupLocations(properties), properties);
         kafkaStreams.start();
     }
 }
