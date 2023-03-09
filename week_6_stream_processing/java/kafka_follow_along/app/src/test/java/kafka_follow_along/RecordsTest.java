@@ -1,7 +1,7 @@
 /*
  * data-engineering-zoomcamp
  * Week 6
- * Kafka Follow Along - JSONProducer Unit Tests
+ * Kafka Follow Along - RecordsTest
  */
 
 package kafka_follow_along;
@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class JSONProducerTest {
+public class RecordsTest {
     @Test
     public void testGetRideRecords() throws Exception {
-        List<Ride> rides = JSONProducer.getRecords(getClass().getResource("rides.csv"), Ride::parseTokens);
+        List<Ride> rides = Records.rides();
         assertEquals(rides.size(), 266);
         assertEquals(rides.get(0).vendorID(), 1);
         assertEquals(rides.get(0).tpepPickupDatetime(), LocalDateTime.parse("2020-07-01T00:25:32"));
@@ -40,7 +40,7 @@ public class JSONProducerTest {
 
     @Test
     public void testGetZoneRecords() throws Exception {
-        List<Zone> zones = JSONProducer.getRecords(getClass().getResource("zones.csv"), Zone::parseTokens);
+        List<Zone> zones = Records.zones();
         assertEquals(zones.size(), 265);
         assertEquals(zones.get(0).locationID(), 1);
         assertEquals(zones.get(0).borugh(), "EWR");
