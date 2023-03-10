@@ -7,5 +7,12 @@
  * in the user manual at https://docs.gradle.org/8.0.1/userguide/multi_project_builds.html
  */
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 rootProject.name = 'kafka_follow_along'
 include('app')
