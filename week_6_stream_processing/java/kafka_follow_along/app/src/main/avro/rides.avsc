@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "RideRecord",
+  "namespace": "schemaregistry",
+  "fields": [
+    {"type": "long", "name": "vendor_id"},
+    {"type": "long", "name": "passenger_count"},
+    {"type": "double", "name": "trip_distance"}
+  ]
+}
