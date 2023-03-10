@@ -69,6 +69,11 @@ tasks.register('runJoin', JavaExec) {
     mainClass = 'kafka_follow_along.JSONKStreamsJoin'
 }
 
+tasks.register('runAvro', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kafka_follow_along.AvroProducer'
+}
+
 spotless {
     java {
         googleJavaFormat('1.15.0').aosp().reflowLongStrings()

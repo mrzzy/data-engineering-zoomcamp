@@ -28,6 +28,9 @@ public class KafkaProperties {
                         "org.apache.kafka.common.security.plain.PlainLoginModule"
                                 + " required username='%s' password='%s';",
                         getEnv("CLUSTER_API_KEY"), getEnv("CLUSTER_API_SECRET")));
+        properties.setProperty(
+                "basic.auth.user.info",
+                String.format("%s:%s", getEnv("SR_API_KEY"), getEnv("SR_API_SECRET")));
         return properties;
     }
 

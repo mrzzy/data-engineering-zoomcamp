@@ -34,13 +34,16 @@ public class JSONProducer<T> {
                     new ProducerRecord<String, T>(targetTopic, makeKey.apply(record), record));
             System.out.println(String.format("Producing: %d/%d", i, records.size()));
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
         producer.close();
     }
 
     public static void main(String[] args) {
         Properties properties = KafkaProperties.load();
 
-        System.out.println(args[0]);
         if (args[0].equals("rides")) {
             // producer rides
             JSONProducer<Ride> rideProducer =
