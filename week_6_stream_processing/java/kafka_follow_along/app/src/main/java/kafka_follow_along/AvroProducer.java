@@ -34,9 +34,10 @@ public class AvroProducer {
         for (int i = 1; i <= records.size(); i++) {
             RideRecord record = records.get(i - 1);
             try {
-            producer.send(
-                    new ProducerRecord<String, RideRecord>(
-                            targetTopic, String.valueOf(record.getVendorId()), record)).get();
+                producer.send(
+                                new ProducerRecord<String, RideRecord>(
+                                        targetTopic, String.valueOf(record.getVendorId()), record))
+                        .get();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -52,18 +53,21 @@ public class AvroProducer {
     private List<RideRecord> toRideRecords(List<Ride> rides) {
         return rides.stream()
                 .map(
-                        ride -> RideRecord.newBuilder()
-                                .setVendorId(ride.vendorID())
-                                .setPassengerCount(ride.passengerCount())
-                                .setTripDistance(ride.tripDistance())
-                                .build())
+                        ride ->
+                                RideRecord.newBuilder()
+                                        .setVendorId(ride.vendorID())
+                                        .setPassengerCount(ride.passengerCount())
+                                        .setTripDistance(ride.tripDistance())
+                                        .setPuLocationId(ride.PULocationID())
+                                        .build())
                 .collect(Collectors.toList());
     }
 
     public static void main(String[] args) {
         Properties properties = KafkaProperties.load();
-        AvroProducer producer = new AvroProducer(
-                properties, properties.getProperty("dezoomcamp.kafka.topic.rides-avro"));
+        AvroProducer producer =
+                new AvroProducer(
+                        properties, properties.getProperty("dezoomcamp.kafka.topic.rides-avro"));
         producer.publish(Records.rides());
     }
 }
