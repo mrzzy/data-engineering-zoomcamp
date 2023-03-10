@@ -76,6 +76,7 @@ tasks.register('runAvro', JavaExec) {
 
 spotless {
     java {
+        target 'src/*/java'
         googleJavaFormat('1.15.0').aosp().reflowLongStrings()
         formatAnnotations()
     }
