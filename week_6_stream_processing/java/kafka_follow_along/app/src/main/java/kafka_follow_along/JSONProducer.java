@@ -17,6 +17,11 @@ public class JSONProducer<T> {
     KafkaProducer<String, T> producer;
 
     public JSONProducer(Properties kafkaProperties, String targetTopic) {
+        // use format specific serializer & deserializer
+        kafkaProperties.setProperty(
+                "value.serializer", "io.confluent.kafka.serializers.KafkaJsonSerializer");
+        kafkaProperties.setProperty(
+                "value.deserializer", "io.confluent.kafka.serializers.KafkaJsonDeserializer");
         this.targetTopic = targetTopic;
         this.producer = new KafkaProducer<>(kafkaProperties);
     }
